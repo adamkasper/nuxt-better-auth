@@ -1,10 +1,10 @@
 import type { NuxtPage } from '@nuxt/schema'
 import type { AuthRouteRules } from './runtime/types'
-import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule } from '@nuxt/kit'
-import { defu } from 'defu'
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'pathe'
+import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule } from '@nuxt/kit'
+import { defu } from 'defu'
+import { join } from 'pathe'
 import { createRouter, toRouteMatcher } from 'radix3'
 import { generateDrizzleSchema, loadUserAuthConfig } from './schema-generator'
 
@@ -146,7 +146,7 @@ async function setupBetterAuthSchema(nuxt: any, serverConfigPath: string) {
         write: true,
       })
 
-      console.log(`[nuxt-better-auth] Generated ${dialect} schema with ${Object.keys(tables).length} tables`)
+      console.warn(`[nuxt-better-auth] Generated ${dialect} schema with ${Object.keys(tables).length} tables`)
     }
     catch (error) {
       console.error('[nuxt-better-auth] Failed to generate schema:', error)

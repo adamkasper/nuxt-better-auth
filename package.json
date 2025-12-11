@@ -3,8 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "description": "Nuxt module for Better Auth integration with NuxtHub, route protection, session management, and role-based access",
-  "license": "MIT",
   "author": "onmax",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/onmax/nuxt-better-auth"
@@ -31,6 +31,8 @@
     "dev": "pnpm dev:prepare && nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build build --stub && nuxi prepare playground",
+    "dev:docs": "nuxi dev docs",
+    "build:docs": "nuxi build docs",
     "prepare": "nuxt-module-build build --stub && nuxi prepare playground",
     "release": "pnpm lint && pnpm test && pnpm prepack && changelogen --release && npm publish && git push --follow-tags",
     "lint": "eslint .",

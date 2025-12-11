@@ -1,7 +1,7 @@
 import type { BetterAuthOptions } from 'better-auth'
 
-type FieldAttribute = { type: string, required?: boolean, unique?: boolean, defaultValue?: any, references?: { model: string, field: string, onDelete?: string }, index?: boolean }
-type TableSchema = { fields: Record<string, FieldAttribute>, modelName?: string }
+interface FieldAttribute { type: string, required?: boolean, unique?: boolean, defaultValue?: any, references?: { model: string, field: string, onDelete?: string }, index?: boolean }
+interface TableSchema { fields: Record<string, FieldAttribute>, modelName?: string }
 
 export function generateDrizzleSchema(tables: Record<string, TableSchema>, dialect: 'sqlite' | 'postgresql' | 'mysql'): string {
   const imports = getImports(dialect)
