@@ -1,4 +1,5 @@
-import type { AuthRouteRules, RoleName } from '../../types'
+import type { AuthRouteRules } from '../../types'
+import { defineEventHandler, getRouteRules } from '#imports'
 
 export default defineEventHandler(async (event) => {
   if (!event.path.startsWith('/api/'))
@@ -9,15 +10,7 @@ export default defineEventHandler(async (event) => {
     return
 
   const rules = routeRules as AuthRouteRules
-  const options: { role?: RoleName | RoleName[], tier?: string | string[] } = {}
 
   if (rules.role)
-    options.role = rules.role
-  if (rules.requiresAdmin)
-    options.role = 'admin'
-  if (rules.tier)
-    options.tier = rules.tier
-
-  if (Object.keys(options).length > 0)
-    await requireUserSession(event, options)
+    await requireUserSession(event, { role: rules.role })
 })

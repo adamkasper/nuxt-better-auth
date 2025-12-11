@@ -1,4 +1,5 @@
 import createServerAuth from '#auth/server'
+import { useRuntimeConfig } from '#imports'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from 'hub:db'
@@ -12,7 +13,7 @@ export function serverAuth(): AuthInstance {
 
   const runtimeConfig = useRuntimeConfig()
 
-  // User's config function receives context
+  // User's config function receives context with db
   const userConfig = createServerAuth({ runtimeConfig, db })
 
   // Library adds database adapter, secret, baseURL

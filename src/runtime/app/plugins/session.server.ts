@@ -1,10 +1,13 @@
+import type { AuthSession, AuthUser } from '#nuxt-better-auth'
+import { defineNuxtPlugin, useState } from '#imports'
+
 export default defineNuxtPlugin({
-  name: 'auth:session-fetch',
+  name: 'auth:session-init',
   enforce: 'pre',
-  async setup(nuxtApp) {
-    nuxtApp.payload.isCached = Boolean(useRequestEvent()?.context.cache)
-    // Only fetch if SSR (not prerendered, not cached)
-    if (nuxtApp.payload.serverRendered && !nuxtApp.payload.prerenderedAt && !nuxtApp.payload.isCached)
-      await useUserSession().fetchSession()
+  setup() {
+    // Just initialize state - session will be fetched client-side
+    useState<AuthSession | null>('auth:session', () => null)
+    useState<AuthUser | null>('auth:user', () => null)
+    useState('auth:ready', () => false)
   },
 })

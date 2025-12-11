@@ -1,12 +1,12 @@
 export default defineNuxtConfig({
   modules: ['@nuxthub/core', '../src/module'],
 
-  hub: { database: true },
+  hub: { db: 'sqlite' },
 
   devtools: { enabled: true },
 
   runtimeConfig: {
-    betterAuthSecret: 'dev-secret-change-in-production',
+    betterAuthSecret: 'dev-secret-change-in-production-32+',
     public: {
       siteUrl: 'http://localhost:3000',
     },
@@ -14,7 +14,7 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/app/**': { auth: 'user' },
-    '/admin/**': { auth: 'user', requiresAdmin: true },
+    '/admin/**': { auth: { role: 'admin' } },
     '/login': { auth: 'guest' },
   },
 

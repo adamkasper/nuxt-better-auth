@@ -1,15 +1,19 @@
 import type { NuxtPage } from '@nuxt/schema'
 import type { AuthRouteRules } from './runtime/types'
-import { existsSync } from 'node:fs'
-import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTypeTemplate, createResolver, defineNuxtModule } from '@nuxt/kit'
+import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule } from '@nuxt/kit'
 import { defu } from 'defu'
+import { existsSync } from 'node:fs'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'pathe'
 import { createRouter, toRouteMatcher } from 'radix3'
+import { generateDrizzleSchema, loadUserAuthConfig } from './schema-generator'
 
-type AuthRouteRule = AuthRouteRules & { swr?: boolean | number }
+export interface BetterAuthModuleOptions {}
 
-export default defineNuxtModule({
+export default defineNuxtModule<BetterAuthModuleOptions>({
   meta: { name: 'nuxt-better-auth', configKey: 'auth', compatibility: { nuxt: '>=3.0.0' } },
-  setup(_, nuxt) {
+  defaults: {},
+  async setup(_options, nuxt) {
     const resolver = createResolver(import.meta.url)
 
     // Validate user config files exist
@@ -65,29 +69,28 @@ export type { AuthMeta, AuthMode, AuthRouteRules, RoleName } from '${resolver.re
       app.middleware.push({ name: 'auth', path: resolver.resolve('./runtime/app/middleware/auth.global'), global: true })
     })
 
+    // Auto-generate better-auth schema and extend NuxtHub db schema
+    await setupBetterAuthSchema(nuxt, serverConfigPath)
+
     // Sync routeRules to page meta
     nuxt.hook('pages:extend', (pages) => {
-      const routeRules = (nuxt.options.routeRules || {}) as Record<string, AuthRouteRule>
+      const routeRules = (nuxt.options.routeRules || {}) as Record<string, AuthRouteRules>
       if (!Object.keys(routeRules).length)
         return
 
       const matcher = toRouteMatcher(createRouter({ routes: routeRules }))
 
       const applyMetaFromRules = (page: NuxtPage) => {
-        const matches = matcher.matchAll(page.path) as Partial<AuthRouteRule>[]
+        const matches = matcher.matchAll(page.path) as Partial<AuthRouteRules>[]
         if (!matches.length)
           return
 
-        const matchedRules = defu({}, ...matches.reverse()) as AuthRouteRule
+        const matchedRules = defu({}, ...matches.reverse()) as AuthRouteRules
 
-        if (matchedRules.auth !== undefined || matchedRules.tier || matchedRules.requiresAdmin || matchedRules.role) {
+        if (matchedRules.auth !== undefined || matchedRules.role) {
           page.meta = page.meta || {}
           if (matchedRules.auth !== undefined)
             page.meta.auth = matchedRules.auth
-          if (matchedRules.tier)
-            page.meta.tier = matchedRules.tier
-          if (matchedRules.requiresAdmin)
-            page.meta.requiresAdmin = true
           if (matchedRules.role)
             page.meta.role = matchedRules.role
         }
@@ -99,6 +102,65 @@ export type { AuthMeta, AuthMode, AuthRouteRules, RoleName } from '${resolver.re
     })
   },
 })
+
+async function setupBetterAuthSchema(nuxt: any, serverConfigPath: string) {
+  // Check if NuxtHub db is enabled
+  const hub = nuxt.options.hub as any
+  if (!hub?.db) {
+    console.warn('[nuxt-better-auth] NuxtHub database not configured. Set hub.db in nuxt.config.ts')
+    return
+  }
+
+  const dialect = typeof hub.db === 'string' ? hub.db : hub.db?.dialect
+  if (!dialect || !['sqlite', 'postgresql', 'mysql'].includes(dialect)) {
+    console.warn(`[nuxt-better-auth] Unsupported database dialect: ${dialect}`)
+    return
+  }
+
+  // Generate schema after modules are done (ensures NuxtHub is set up)
+  nuxt.hook('modules:done', async () => {
+    try {
+      // Load user's auth config to get plugins
+      const configFile = `${serverConfigPath}.ts`
+      const userConfig = await loadUserAuthConfig(configFile)
+      const plugins = userConfig.plugins || []
+
+      // Get schema tables from better-auth
+      const { getAuthTables } = await import('better-auth/db')
+      const tables = getAuthTables({ plugins })
+
+      // Generate Drizzle schema code
+      const schemaCode = generateDrizzleSchema(tables, dialect as 'sqlite' | 'postgresql' | 'mysql')
+
+      // Write schema to build directory
+      const schemaDir = join(nuxt.options.buildDir, 'better-auth')
+      const schemaPath = join(schemaDir, `schema.${dialect}.ts`)
+
+      await mkdir(schemaDir, { recursive: true })
+      await writeFile(schemaPath, schemaCode)
+
+      // Also create a template so it's properly tracked
+      addTemplate({
+        filename: `better-auth/schema.${dialect}.ts`,
+        getContents: () => schemaCode,
+        write: true,
+      })
+
+      console.log(`[nuxt-better-auth] Generated ${dialect} schema with ${Object.keys(tables).length} tables`)
+    }
+    catch (error) {
+      console.error('[nuxt-better-auth] Failed to generate schema:', error)
+    }
+  })
+
+  // Extend NuxtHub schema with our generated schema
+  nuxt.hook('hub:db:schema:extend', ({ paths, dialect: hookDialect }: { paths: string[], dialect: string }) => {
+    const schemaPath = join(nuxt.options.buildDir, 'better-auth', `schema.${hookDialect}.ts`)
+    if (existsSync(schemaPath)) {
+      paths.push(schemaPath)
+    }
+  })
+}
 
 // Re-export config helpers
 export { defineClientAuth, defineServerAuth } from './runtime/config'

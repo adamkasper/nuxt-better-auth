@@ -26,21 +26,12 @@ export interface AuthSession {
   userAgent?: string | null
 }
 
-// Auth configuration - extend with custom tiers, payment logic, etc.
-export interface AuthExtensions {
-  // User defines functions like: isPremium: (user) => boolean
-}
-
-// Composable return type
+// Composable return type (core fields only - actual composable has more from client)
 export interface UserSessionComposable {
   user: Ref<AuthUser | null>
   session: Ref<AuthSession | null>
   loggedIn: ComputedRef<boolean>
   ready: ComputedRef<boolean>
-  client: unknown
-  signIn: unknown
-  signUp: unknown
-  signOut: (...args: unknown[]) => Promise<unknown>
   fetchSession: (options?: { headers?: HeadersInit, force?: boolean }) => Promise<void>
-  updateUser: (updates: Partial<AuthUser>) => void
+  signOut: () => Promise<void>
 }

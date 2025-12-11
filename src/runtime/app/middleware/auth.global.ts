@@ -1,28 +1,29 @@
 import type { AuthMeta, AuthMode, RoleName } from '../../types'
+import { createError, defineNuxtRouteMiddleware, navigateTo, useRequestHeaders } from '#imports'
 
 declare module '#app' {
   interface PageMeta {
     auth?: AuthMeta
-    tier?: string | string[]
   }
 }
 
 declare module 'vue-router' {
   interface RouteMeta {
     auth?: AuthMeta
-    tier?: string | string[]
   }
 }
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const auth = to.meta.auth as AuthMeta | undefined
 
-  if (auth === false)
+  // No auth meta = public page, skip auth checks
+  if (auth === undefined || auth === false)
     return
 
-  const { fetchSession, user, loggedIn } = useUserSession()
+  const { fetchSession, user, loggedIn, ready } = useUserSession()
 
-  if (!loggedIn.value) {
+  // Fetch session if not already loaded
+  if (!loggedIn.value && !ready.value) {
     const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
     await fetchSession({ headers })
   }
@@ -46,19 +47,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const requiredRole = typeof auth === 'object' ? auth.role : undefined
   if (requiredRole) {
     const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
-    if (!user.value || !allowedRoles.includes(user.value.role as RoleName)) {
-      if (import.meta.dev) {
-        useState('dev-role-bypass', () => true).value = true
-      }
-      else {
-        throw createError({ statusCode: 403, statusMessage: 'Access denied' })
-      }
-    }
-    else {
-      useState('dev-role-bypass', () => false).value = false
-    }
+    if (!user.value || !allowedRoles.includes(user.value.role as RoleName))
+      throw createError({ statusCode: 403, statusMessage: 'Access denied' })
   }
-
-  // Tier-based access is handled by usePageAccess - middleware just ensures auth
-  // User implements tier checks in their own composables/components
 })

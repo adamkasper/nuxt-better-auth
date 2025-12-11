@@ -54,3 +54,6 @@ coverage
 Network Trash Folder
 Temporary Items
 .apdisk
+
+test/fixtures/basic/.data
+playground/.data

@@ -9,5 +9,10 @@
   },
   "dependencies": {
     "nuxt": "^4.2.2"
+  },
+  "devDependencies": {
+    "@libsql/client": "^0.15.15",
+    "drizzle-kit": "^0.31.8",
+    "drizzle-orm": "^0.45.1"
   }
 }

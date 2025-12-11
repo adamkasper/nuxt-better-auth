@@ -1,13 +1,16 @@
 import type { AppAuthClient } from '#auth/client'
 import type { AuthSession, AuthUser } from '#nuxt-better-auth'
 import { createAppAuthClient } from '#auth/client'
+import { computed, useRequestHeaders, useRuntimeConfig, useState } from '#imports'
 import { consola } from 'consola'
 
 export function useUserSession() {
   const runtimeConfig = useRuntimeConfig()
 
-  // Create properly typed client from user's config
-  const client: AppAuthClient = createAppAuthClient(runtimeConfig.public.siteUrl)
+  // Client only - create better-auth client for client-side operations
+  const client: AppAuthClient | null = import.meta.client
+    ? createAppAuthClient(runtimeConfig.public.siteUrl || window.location.origin)
+    : null
 
   const session = useState<AuthSession | null>('auth:session', () => null)
   const user = useState<AuthUser | null>('auth:user', () => null)
@@ -27,21 +30,31 @@ export function useUserSession() {
   }
 
   async function fetchSession(options: { headers?: HeadersInit, force?: boolean } = {}) {
+    // On server, session is already fetched by server middleware - nothing to do
+    if (import.meta.server) {
+      if (!authReady.value)
+        authReady.value = true
+      return
+    }
+
     if (sessionFetching.value && !options.force)
       return
 
-    const headers = options.headers || (import.meta.server ? useRequestHeaders(['cookie']) : undefined)
-
     sessionFetching.value = true
     try {
-      const fetchOptions = headers ? { headers } : undefined
-      const { data } = await client.getSession({}, fetchOptions)
-      if (data?.session && data?.user) {
-        session.value = data.session as AuthSession
-        user.value = data.user as AuthUser
-      }
-      else {
-        clearSession()
+      if (client) {
+        const headers = options.headers || useRequestHeaders(['cookie'])
+        const fetchOptions = headers ? { headers } : undefined
+        const result = await client.getSession({}, fetchOptions)
+        const data = result.data as { session: AuthSession, user: AuthUser } | null
+
+        if (data?.session && data?.user) {
+          session.value = data.session
+          user.value = data.user
+        }
+        else {
+          clearSession()
+        }
       }
     }
     catch (error) {
@@ -56,7 +69,9 @@ export function useUserSession() {
     }
   }
 
-  async function signOut(...args: Parameters<typeof client.signOut>) {
+  async function signOut(...args: Parameters<NonNullable<typeof client>['signOut']>) {
+    if (!client)
+      throw new Error('signOut can only be called on client-side')
     const response = await client.signOut(...args)
     clearSession()
     return response
@@ -69,9 +84,9 @@ export function useUserSession() {
     user,
     loggedIn,
     ready,
-    // Methods
-    signIn: client.signIn,
-    signUp: client.signUp,
+    // Methods - signIn/signUp only available on client
+    signIn: client?.signIn,
+    signUp: client?.signUp,
     signOut,
     fetchSession,
     updateUser,
