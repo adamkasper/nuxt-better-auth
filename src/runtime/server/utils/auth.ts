@@ -1,3 +1,4 @@
+import * as dbSchema from '#auth/db-schema'
 import createServerAuth from '#auth/server'
 import { useRuntimeConfig } from '#imports'
 import { betterAuth } from 'better-auth'
@@ -16,10 +17,10 @@ export function serverAuth(): AuthInstance {
   // User's config function receives context with db
   const userConfig = createServerAuth({ runtimeConfig, db })
 
-  // Library adds database adapter, secret, baseURL
+  // Pass schema explicitly - NuxtHub's bundled schema doesn't preserve exports
   _auth = betterAuth({
     ...userConfig,
-    database: drizzleAdapter(db, { provider: 'sqlite' }),
+    database: drizzleAdapter(db, { provider: 'sqlite', schema: dbSchema }),
     secret: runtimeConfig.betterAuthSecret,
     baseURL: runtimeConfig.public.siteUrl,
   })

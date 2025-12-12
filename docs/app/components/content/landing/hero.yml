@@ -1,18 +1,18 @@
-title: 'Nuxt Better Auth'
+title: Nuxt Better Auth
 description: 'Seamless Better Auth integration for Nuxt. Auto-generated schemas, SSR-safe sessions, and declarative route protection.'
 links:
-  - label: 'Get Started'
-    to: '/getting-started/installation'
-    icon: 'i-lucide-arrow-right'
+  - label: Get Started
+    to: /getting-started/installation
+    icon: i-lucide-arrow-right
     trailing: true
-  - label: 'GitHub'
+  - label: GitHub
     to: 'https://github.com/onmax/nuxt-better-auth'
-    target: '_blank'
-    color: 'neutral'
-    variant: 'outline'
-    icon: 'i-simple-icons-github'
+    target: _blank
+    color: neutral
+    variant: outline
+    icon: i-simple-icons-github
 tabs:
-  - label: 'nuxt.config.ts'
+  - label: nuxt.config.ts
     code: |
       ```ts
       export default defineNuxtConfig({
@@ -26,7 +26,7 @@ tabs:
         },
       })
       ```
-  - label: 'auth.config.ts'
+  - label: auth.config.ts
     code: |
       ```ts
       import { twoFactor } from 'better-auth/plugins'
@@ -40,7 +40,7 @@ tabs:
         plugins: [twoFactor()], // 27+ plugins available
       }))
       ```
-  - label: 'auth.client.ts'
+  - label: auth.client.ts
     code: |
       ```ts
       import { twoFactorClient } from 'better-auth/client/plugins'
@@ -53,7 +53,7 @@ tabs:
         })
       }
       ```
-  - label: 'schema.ts'
+  - label: schema.ts
     code: |
       ```ts
       // .nuxt/better-auth/schema.sqlite.ts (auto-generated)
