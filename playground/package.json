@@ -8,6 +8,7 @@
     "generate": "nuxi generate"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.4.6",
     "@nuxt/fonts": "^0.12.1",
     "@nuxt/ui": "^4.2.1",
     "@nuxthub/core": "^0.10.1",
