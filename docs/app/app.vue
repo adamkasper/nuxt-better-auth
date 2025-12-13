@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ContentNavigationItem, PageCollections } from '@nuxt/content'
+import { Analytics } from '@vercel/analytics/nuxt'
 
 const { locale, isEnabled } = useDocusI18n()
 const collectionName = computed(() => isEnabled.value ? `docs_${locale.value}` : 'docs')
@@ -28,4 +29,6 @@ provide('navigation', navigation)
   <ClientOnly>
     <LazyUContentSearch :files="files" :navigation="navigation" />
   </ClientOnly>
+
+  <Analytics />
 </template>
