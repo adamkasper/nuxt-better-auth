@@ -3,11 +3,14 @@ import type { BetterAuthModuleOptions } from './runtime/config'
 import type { AuthRouteRules } from './runtime/types'
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule, updateTemplates } from '@nuxt/kit'
+import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule, extendPages, updateTemplates } from '@nuxt/kit'
 import { defu } from 'defu'
 import { join } from 'pathe'
 import { createRouter, toRouteMatcher } from 'radix3'
+import { setupDevTools } from './devtools'
 import { generateDrizzleSchema, loadUserAuthConfig } from './schema-generator'
+
+import './types/hooks'
 
 export type { BetterAuthModuleOptions } from './runtime/config'
 
@@ -167,6 +170,17 @@ declare module 'nitropack/types' {
       await setupBetterAuthSchema(nuxt, serverConfigPath)
     }
 
+    // Setup DevTools in development mode
+    if (nuxt.options.dev) {
+      setupDevTools(nuxt)
+      addServerHandler({ route: '/api/_better-auth/sessions', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.get') })
+      addServerHandler({ route: '/api/_better-auth/users', handler: resolver.resolve('./runtime/server/api/_better-auth/users.get') })
+      addServerHandler({ route: '/api/_better-auth/config', handler: resolver.resolve('./runtime/server/api/_better-auth/config.get') })
+      extendPages((pages) => {
+        pages.push({ name: 'better-auth-devtools', path: '/__better-auth-devtools', file: resolver.resolve('./runtime/app/pages/__better-auth-devtools.vue') })
+      })
+    }
+
     // Sync routeRules to page meta
     nuxt.hook('pages:extend', (pages) => {
       const routeRules = (nuxt.options.routeRules || {}) as Record<string, AuthRouteRules>
@@ -209,7 +223,13 @@ async function setupBetterAuthSchema(nuxt: any, serverConfigPath: string) {
       // Load user's auth config to get plugins
       const configFile = `${serverConfigPath}.ts`
       const userConfig = await loadUserAuthConfig(configFile)
-      const plugins = userConfig.plugins || []
+
+      // Allow other modules to extend auth config
+      const extendedConfig: { plugins?: any[] } = {}
+      await nuxt.callHook('better-auth:config:extend', extendedConfig)
+
+      // Merge plugins from user config and extensions
+      const plugins = [...(userConfig.plugins || []), ...(extendedConfig.plugins || [])]
 
       // Get schema tables from better-auth
       const { getAuthTables } = await import('better-auth/db')

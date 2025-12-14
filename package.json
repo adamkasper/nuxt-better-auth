@@ -59,6 +59,7 @@
     "@better-auth/cli": "^1.4.6",
     "@libsql/client": "^0.15.15",
     "@nuxt/devtools": "^3.1.1",
+    "@nuxt/devtools-kit": "^3.1.1",
     "@nuxt/module-builder": "^1.0.2",
     "@nuxt/schema": "^4.2.2",
     "@nuxt/test-utils": "^3.21.0",
