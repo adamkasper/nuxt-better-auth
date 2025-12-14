@@ -60,7 +60,6 @@ export function useUserSession() {
     )
   }
 
-  // Helper to wait for session to be synced after auth actions
   function waitForSession(): Promise<void> {
     return new Promise((resolve) => {
       if (loggedIn.value) {
@@ -107,7 +106,6 @@ export function useUserSession() {
     }) as T
   }
 
-  // Create proxied signIn/signUp that wrap each method
   const signIn: SignIn = client?.signIn
     ? new Proxy(client.signIn, {
         get(target, prop) {
@@ -142,7 +140,6 @@ export function useUserSession() {
       return
     }
 
-    // On client, trigger a refetch by toggling the session signal
     if (client) {
       try {
         const headers = options.headers || useRequestHeaders(['cookie'])
@@ -179,7 +176,6 @@ export function useUserSession() {
   }
 
   return {
-    // Core state
     client,
     session,
     user,

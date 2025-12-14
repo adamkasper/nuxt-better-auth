@@ -1,4 +1,5 @@
 import type { BetterAuthOptions } from 'better-auth'
+import { consola } from 'consola'
 
 interface FieldAttribute { type: string | string[], required?: boolean, unique?: boolean, defaultValue?: any, references?: { model: string, field: string, onDelete?: string }, index?: boolean }
 interface TableSchema { fields: Record<string, FieldAttribute>, modelName?: string }
@@ -148,7 +149,7 @@ export async function loadUserAuthConfig(configPath: string): Promise<Partial<Be
     return {}
   }
   catch (error) {
-    console.warn('[@onmax/nuxt-better-auth] Failed to load auth config for schema generation:', error)
+    consola.warn('[@onmax/nuxt-better-auth] Failed to load auth config for schema generation:', error)
     return {}
   }
 }

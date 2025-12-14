@@ -4,6 +4,7 @@ import type { AuthRouteRules } from './runtime/types'
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule, extendPages, updateTemplates } from '@nuxt/kit'
+import { consola } from 'consola'
 import { defu } from 'defu'
 import { join } from 'pathe'
 import { createRouter, toRouteMatcher } from 'radix3'
@@ -20,7 +21,6 @@ export default defineNuxtModule<BetterAuthModuleOptions>({
   async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
 
-    // Validate user config files exist
     const serverConfigPath = resolver.resolve(nuxt.options.rootDir, 'server/auth.config')
     const clientConfigPath = resolver.resolve(nuxt.options.rootDir, 'app/auth.client')
 
@@ -32,18 +32,15 @@ export default defineNuxtModule<BetterAuthModuleOptions>({
     if (!clientConfigExists)
       throw new Error('[@onmax/nuxt-better-auth] Missing app/auth.client.ts - export createAppAuthClient()')
 
-    // Detect NuxtHub config
     const hub = (nuxt.options as unknown as Record<string, unknown>).hub as { db?: boolean | string | object, kv?: boolean } | undefined
     const hasDb = !!hub?.db
 
-    // Validate KV is enabled if secondaryStorage requested
     let secondaryStorageEnabled = options.secondaryStorage ?? false
     if (secondaryStorageEnabled && !hub?.kv) {
-      console.warn('[nuxt-better-auth] secondaryStorage requires hub.kv: true in nuxt.config.ts. Disabling.')
+      consola.warn('[nuxt-better-auth] secondaryStorage requires hub.kv: true in nuxt.config.ts. Disabling.')
       secondaryStorageEnabled = false
     }
 
-    // Expose module options to runtime config
     nuxt.options.runtimeConfig.public = nuxt.options.runtimeConfig.public || {}
     nuxt.options.runtimeConfig.public.auth = defu(nuxt.options.runtimeConfig.public.auth as Record<string, unknown>, {
       redirects: {
@@ -52,20 +49,17 @@ export default defineNuxtModule<BetterAuthModuleOptions>({
       },
     })
 
-    // Private runtime config (server-only)
+    // server-only
     nuxt.options.runtimeConfig.auth = defu(nuxt.options.runtimeConfig.auth as Record<string, unknown>, {
       secondaryStorage: secondaryStorageEnabled,
       useDatabase: hasDb,
     })
 
-    // Register #nuxt-better-auth alias for type augmentation
     nuxt.options.alias['#nuxt-better-auth'] = resolver.resolve('./runtime/types/augment')
-
-    // Register aliases for user config files
     nuxt.options.alias['#auth/server'] = serverConfigPath
     nuxt.options.alias['#auth/client'] = clientConfigPath
 
-    // Generate secondary storage virtual module (conditional hub:kv)
+    // conditional hub:kv
     const secondaryStorageCode = secondaryStorageEnabled
       ? `import { kv } from 'hub:kv'
 export function createSecondaryStorage() {
@@ -94,21 +88,17 @@ declare module '#auth/secondary-storage' {
 `,
     })
 
-    // Add type template for #nuxt-better-auth module augmentation
     addTypeTemplate({
       filename: 'types/nuxt-better-auth.d.ts',
       getContents: () => `
-// Type augmentation support
 export * from '${resolver.resolve('./runtime/types/augment')}'
 export type { AuthMeta, AuthMode, AuthRouteRules, UserMatch, RequireSessionOptions, Auth, InferUser, InferSession } from '${resolver.resolve('./runtime/types')}'
 `,
     })
 
-    // Add type template that infers types from user's auth.config.ts
     addTypeTemplate({
       filename: 'types/nuxt-better-auth-infer.d.ts',
       getContents: () => `
-// Auto-generated types from auth.config.ts
 import type { InferUser, InferSession } from 'better-auth'
 import type { RuntimeConfig } from 'nuxt/schema'
 import type configFn from '${serverConfigPath}'
@@ -126,11 +116,9 @@ declare module '#nuxt-better-auth' {
 `,
     })
 
-    // Add separate type template for nitropack augmentation (must be ambient, no exports)
     addTypeTemplate({
       filename: 'types/nuxt-better-auth-nitro.d.ts',
       getContents: () => `
-// Extend NitroRouteRules with auth options
 declare module 'nitropack/types' {
   interface NitroRouteRules {
     auth?: import('${resolver.resolve('./runtime/types')}').AuthMeta
@@ -139,43 +127,30 @@ declare module 'nitropack/types' {
 `,
     })
 
-    // HMR: Watch auth.config.ts for changes and regenerate types
+    // HMR
     nuxt.hook('builder:watch', async (_event, relativePath) => {
       if (relativePath.includes('auth.config')) {
         await updateTemplates({ filter: t => t.filename.includes('nuxt-better-auth') })
       }
     })
 
-    // Auto-import server utils (serverAuth, getUserSession, requireUserSession)
     addServerImportsDir(resolver.resolve('./runtime/server/utils'))
-
-    // Register server middleware
     addServerScanDir(resolver.resolve('./runtime/server/middleware'))
-
-    // Register auth API handler
     addServerHandler({ route: '/api/auth/**', handler: resolver.resolve('./runtime/server/api/auth/[...all]') })
-
-    // Auto-import client composables
     addImportsDir(resolver.resolve('./runtime/app/composables'))
-
-    // Register session plugins
+    addImportsDir(resolver.resolve('./runtime/utils'))
     addPlugin({ src: resolver.resolve('./runtime/app/plugins/session.server'), mode: 'server' })
     addPlugin({ src: resolver.resolve('./runtime/app/plugins/session.client'), mode: 'client' })
-
-    // Register auth components
     addComponentsDir({ path: resolver.resolve('./runtime/app/components') })
 
-    // Register client middleware
     nuxt.hook('app:resolve', (app) => {
       app.middleware.push({ name: 'auth', path: resolver.resolve('./runtime/app/middleware/auth.global'), global: true })
     })
 
-    // Auto-generate better-auth schema and extend NuxtHub db schema (only if db configured)
     if (hasDb) {
       await setupBetterAuthSchema(nuxt, serverConfigPath)
     }
 
-    // Setup DevTools in development mode
     if (nuxt.options.dev) {
       setupDevTools(nuxt)
       addServerHandler({ route: '/api/_better-auth/sessions', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.get') })
@@ -186,7 +161,6 @@ declare module 'nitropack/types' {
       })
     }
 
-    // Sync routeRules to page meta
     nuxt.hook('pages:extend', (pages) => {
       const routeRules = (nuxt.options.routeRules || {}) as Record<string, AuthRouteRules>
       if (!Object.keys(routeRules).length)
@@ -218,53 +192,40 @@ async function setupBetterAuthSchema(nuxt: any, serverConfigPath: string) {
   const hub = nuxt.options.hub as any
   const dialect = typeof hub.db === 'string' ? hub.db : hub.db?.dialect
   if (!dialect || !['sqlite', 'postgresql', 'mysql'].includes(dialect)) {
-    console.warn(`[nuxt-better-auth] Unsupported database dialect: ${dialect}`)
+    consola.warn(`[nuxt-better-auth] Unsupported database dialect: ${dialect}`)
     return
   }
 
-  // Generate schema after modules are done (ensures NuxtHub is set up)
   nuxt.hook('modules:done', async () => {
     try {
-      // Load user's auth config to get plugins
       const configFile = `${serverConfigPath}.ts`
       const userConfig = await loadUserAuthConfig(configFile)
 
-      // Allow other modules to extend auth config
       const extendedConfig: { plugins?: any[] } = {}
       await nuxt.callHook('better-auth:config:extend', extendedConfig)
 
-      // Merge plugins from user config and extensions
       const plugins = [...(userConfig.plugins || []), ...(extendedConfig.plugins || [])]
 
-      // Get schema tables from better-auth
       const { getAuthTables } = await import('better-auth/db')
       const tables = getAuthTables({ plugins })
 
-      // Generate Drizzle schema code
       const schemaCode = generateDrizzleSchema(tables, dialect as 'sqlite' | 'postgresql' | 'mysql')
 
-      // Write schema to build directory
       const schemaDir = join(nuxt.options.buildDir, 'better-auth')
       const schemaPath = join(schemaDir, `schema.${dialect}.ts`)
 
       await mkdir(schemaDir, { recursive: true })
       await writeFile(schemaPath, schemaCode)
 
-      // Also create a template so it's properly tracked
-      addTemplate({
-        filename: `better-auth/schema.${dialect}.ts`,
-        getContents: () => schemaCode,
-        write: true,
-      })
+      addTemplate({ filename: `better-auth/schema.${dialect}.ts`, getContents: () => schemaCode, write: true })
 
-      console.warn(`[nuxt-better-auth] Generated ${dialect} schema with ${Object.keys(tables).length} tables`)
+      consola.info(`[nuxt-better-auth] Generated ${dialect} schema with ${Object.keys(tables).length} tables`)
     }
     catch (error) {
-      console.error('[nuxt-better-auth] Failed to generate schema:', error)
+      consola.error('[nuxt-better-auth] Failed to generate schema:', error)
     }
   })
 
-  // Extend NuxtHub schema with our generated schema
   nuxt.hook('hub:db:schema:extend', ({ paths, dialect: hookDialect }: { paths: string[], dialect: string }) => {
     const schemaPath = join(nuxt.options.buildDir, 'better-auth', `schema.${hookDialect}.ts`)
     if (existsSync(schemaPath)) {
@@ -273,6 +234,5 @@ async function setupBetterAuthSchema(nuxt: any, serverConfigPath: string) {
   })
 }
 
-// Re-export config helpers
 export { defineClientAuth, defineServerAuth } from './runtime/config'
 export type { Auth, AuthMeta, AuthMode, AuthRouteRules, AuthSession, AuthUser, InferSession, InferUser, RequireSessionOptions, ServerAuthContext, UserMatch } from './runtime/types'
