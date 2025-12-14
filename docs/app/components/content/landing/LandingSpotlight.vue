@@ -26,7 +26,7 @@ onMounted(() => {
           rx="1924.71"
           ry="273.501"
           transform="matrix(-0.822377 -0.568943 -0.568943 0.822377 3631.88 2291.09)"
-          class="fill-stone-400/30 dark:fill-white/[0.06]"
+          class="fill-white/10 dark:fill-white/[0.06]"
         />
       </g>
       <defs>
