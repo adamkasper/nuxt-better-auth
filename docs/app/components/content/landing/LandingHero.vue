@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { motion, AnimatePresence, MotionConfig } from 'motion-v'
-import { useElementSize, useClipboard } from '@vueuse/core'
+import { useClipboard, useElementSize } from '@vueuse/core'
+import { AnimatePresence, motion, MotionConfig } from 'motion-v'
 // @ts-expect-error yaml is not typed
 import hero from './hero.yml'
 
@@ -15,9 +15,12 @@ const currentCode = computed(() => tabs[currentTab.value]?.code.trim() ?? '')
 const lineCount = computed(() => currentCode.value.split('\n').length)
 
 function getLang(filename: string) {
-  if (filename.endsWith('.ts')) return 'ts'
-  if (filename.endsWith('.vue')) return 'vue'
-  if (filename.endsWith('.js')) return 'js'
+  if (filename.endsWith('.ts'))
+    return 'ts'
+  if (filename.endsWith('.vue'))
+    return 'vue'
+  if (filename.endsWith('.js'))
+    return 'js'
   return 'ts'
 }
 
@@ -143,7 +146,7 @@ function getCodeBlock(tab: { name: string, code: string }) {
                         {{ tab.name }}
                         <motion.div
                           v-if="currentTab === index"
-                          layoutId="tab-code-preview"
+                          layout-id="tab-code-preview"
                           class="bg-stone-800 absolute inset-0 -z-10 rounded-full"
                         />
                       </button>
@@ -204,7 +207,9 @@ function getCodeBlock(tab: { name: string, code: string }) {
                           <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
                             <path fill="currentColor" d="M10 20H8V4h2v2h2v3h2v2h2v2h-2v2h-2v3h-2z" />
                           </svg>
-                          <p class="text-sm">Demo</p>
+                          <p class="text-sm">
+                            Demo
+                          </p>
                         </NuxtLink>
                       </motion.div>
                     </div>
