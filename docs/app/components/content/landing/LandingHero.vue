@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useClipboard, useElementSize } from '@vueuse/core'
+import { useElementSize } from '@vueuse/core'
 import { AnimatePresence, motion, MotionConfig } from 'motion-v'
 // @ts-expect-error yaml is not typed
 import hero from './hero.yml'
@@ -7,7 +7,6 @@ import hero from './hero.yml'
 const currentTab = ref(0)
 const contentRef = ref<HTMLElement | null>(null)
 const { height } = useElementSize(contentRef)
-const { copy, copied } = useClipboard()
 
 const tabs = hero.tabs as { name: string, code: string }[]
 
@@ -133,10 +132,10 @@ function getCodeBlock(tab: { name: string, code: string }) {
             <div class="from-stone-300 via-stone-300/70 to-blue-300 absolute inset-0 rounded-none bg-gradient-to-tr opacity-0 dark:opacity-5" />
 
             <!-- Code Preview Card -->
-            <MotionConfig :transition="{ duration: 0.5, type: 'spring', bounce: 0 }">
+            <MotionConfig :transition="{ duration: 0.3, ease: 'easeInOut' }">
               <motion.div
                 :animate="{ height: height > 0 ? height : undefined }"
-                class="code-preview relative overflow-hidden rounded-sm ring-1 ring-white/10 backdrop-blur-lg"
+                class="code-preview relative overflow-hidden rounded-sm backdrop-blur-lg"
               >
                 <div ref="contentRef">
                   <div class="absolute -top-px left-0 right-0 h-px" />
@@ -168,35 +167,21 @@ function getCodeBlock(tab: { name: string, code: string }) {
                     </div>
 
                     <!-- Code content area -->
-                    <div class="flex flex-col items-start px-1 text-sm">
-                      <!-- Copy button (top-right) -->
-                      <div class="absolute top-2 right-4">
-                        <UButton
-                          variant="outline"
-                          size="xs"
-                          class="border-none bg-transparent size-5"
-                          :aria-label="copied ? 'Copied' : 'Copy code'"
-                          @click="copy(currentCode)"
-                        >
-                          <UIcon :name="copied ? 'i-lucide-check' : 'i-lucide-copy'" class="size-3" />
-                          <span class="sr-only">Copy code</span>
-                        </UButton>
-                      </div>
-
+                    <div class="flex flex-col items-start px-1 text-sm mt-6">
                       <div class="w-full overflow-x-auto">
                         <AnimatePresence mode="wait">
                           <motion.div
                             :key="currentTab"
-                            :initial="{ opacity: 0 }"
-                            :animate="{ opacity: 1 }"
-                            :exit="{ opacity: 0 }"
-                            :transition="{ duration: 0.5 }"
+                            :initial="{ opacity: 0, y: 4 }"
+                            :animate="{ opacity: 1, y: 0 }"
+                            :exit="{ opacity: 0, y: -4 }"
+                            :transition="{ duration: 0.25, ease: 'easeOut' }"
                             class="relative flex items-start px-1 text-sm min-w-max"
                           >
                             <!-- Line numbers gutter -->
                             <div
                               aria-hidden="true"
-                              class="border-slate-300/5 text-slate-600 select-none border-r pr-4 font-mono"
+                              class="text-slate-600 select-none pl-2 pr-4 font-mono text-xs sm:text-sm leading-6"
                             >
                               <div v-for="i in lineCount" :key="i">
                                 {{ String(i).padStart(2, '0') }}
@@ -204,7 +189,7 @@ function getCodeBlock(tab: { name: string, code: string }) {
                             </div>
 
                             <!-- Code via MDC -->
-                            <div class="hero-code pl-4">
+                            <div class="hero-code">
                               <MDC :value="getCodeBlock(tabs[currentTab]!)" tag="div" />
                             </div>
                           </motion.div>
