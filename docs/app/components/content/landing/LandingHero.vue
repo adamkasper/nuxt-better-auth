@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { AnimatePresence, motion, MotionConfig } from 'motion-v'
+import { motion, MotionConfig } from 'motion-v'
 // @ts-expect-error yaml is not typed
 import hero from './hero.yml'
 
@@ -10,8 +10,7 @@ const { height } = useElementSize(contentRef)
 
 const tabs = hero.tabs as { name: string, code: string }[]
 
-const currentCode = computed(() => tabs[currentTab.value]?.code.trim() ?? '')
-const lineCount = computed(() => currentCode.value.split('\n').length)
+const lineCounts = computed(() => tabs.map(tab => tab.code.trim().split('\n').length))
 
 function getLang(filename: string) {
   if (filename.endsWith('.ts'))
@@ -168,32 +167,31 @@ function getCodeBlock(tab: { name: string, code: string }) {
 
                     <!-- Code content area -->
                     <div class="flex flex-col items-start px-1 text-sm mt-6">
-                      <div class="w-full overflow-x-auto">
-                        <AnimatePresence mode="wait">
-                          <motion.div
-                            :key="currentTab"
-                            :initial="{ opacity: 0, y: 4 }"
-                            :animate="{ opacity: 1, y: 0 }"
-                            :exit="{ opacity: 0, y: -4 }"
-                            :transition="{ duration: 0.25, ease: 'easeOut' }"
-                            class="relative flex items-start px-1 text-sm min-w-max"
+                      <div class="w-full overflow-hidden">
+                        <!-- All tabs rendered for SSR, animated with CSS -->
+                        <div class="relative">
+                          <div
+                            v-for="(tab, index) in tabs"
+                            :key="tab.name"
+                            class="flex items-start px-1 text-sm min-w-max transition-all duration-250 ease-out"
+                            :class="index === currentTab ? 'opacity-100 relative' : 'opacity-0 absolute inset-0 pointer-events-none'"
                           >
                             <!-- Line numbers gutter -->
                             <div
                               aria-hidden="true"
                               class="text-slate-600 select-none pl-2 pr-4 font-mono text-xs sm:text-sm leading-6"
                             >
-                              <div v-for="i in lineCount" :key="i">
+                              <div v-for="i in lineCounts[index]" :key="i">
                                 {{ String(i).padStart(2, '0') }}
                               </div>
                             </div>
 
-                            <!-- Code via MDC -->
+                            <!-- Code via MDC - all rendered during SSR -->
                             <div class="hero-code">
-                              <MDC :value="getCodeBlock(tabs[currentTab]!)" tag="div" />
+                              <MDC :value="getCodeBlock(tab)" tag="div" />
                             </div>
-                          </motion.div>
-                        </AnimatePresence>
+                          </div>
+                        </div>
                       </div>
 
                       <!-- Demo CTA (bottom-right) -->

@@ -15,10 +15,8 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      meta: [
-        { property: 'og:image', content: '/og.png' },
-        { name: 'twitter:card', content: 'summary_large_image' },
-      ],
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+      meta: [{ name: 'twitter:card', content: 'summary_large_image' }],
     },
   },
 
