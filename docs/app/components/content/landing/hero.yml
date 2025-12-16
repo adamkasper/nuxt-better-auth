@@ -1,15 +1,11 @@
-tagline: Nuxt + Better Auth
+tagline: Auth for Nuxt
 title: The most comprehensive authentication framework for Nuxt.
-description: Seamless Better Auth integration with auto-generated schemas, SSR-safe sessions, and declarative route protection.
+description: Seamless Better Auth integration with SSR-safe sessions and declarative route protection.
 tabs:
   - name: nuxt.config.ts
     code: |
       export default defineNuxtConfig({
         modules: ['@onmax/nuxt-better-auth'],
-        hub: { database: true },
-        runtimeConfig: {
-          oauth: { github: {}, google: {} },
-        },
         routeRules: {
           '/dashboard/**': { auth: 'user' },
           '/admin/**': { auth: 'admin' },

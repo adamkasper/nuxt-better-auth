@@ -8,7 +8,6 @@ const links = [
   { label: 'Documentation', to: '/getting-started' },
   { label: 'GitHub', to: appConfig.github?.url, external: true },
   { label: 'Better Auth', to: 'https://www.better-auth.com', external: true },
-  { label: 'NuxtHub', to: 'https://hub.nuxt.com', external: true },
 ]
 </script>
 

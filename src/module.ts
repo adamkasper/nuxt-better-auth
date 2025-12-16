@@ -3,7 +3,7 @@ import type { BetterAuthModuleOptions } from './runtime/config'
 import type { AuthRouteRules } from './runtime/types'
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule, extendPages, updateTemplates } from '@nuxt/kit'
+import { addComponentsDir, addImportsDir, addPlugin, addServerHandler, addServerImportsDir, addServerScanDir, addTemplate, addTypeTemplate, createResolver, defineNuxtModule, extendPages, hasNuxtModule, updateTemplates } from '@nuxt/kit'
 import { consola } from 'consola'
 import { defu } from 'defu'
 import { join } from 'pathe'
@@ -32,12 +32,13 @@ export default defineNuxtModule<BetterAuthModuleOptions>({
     if (!clientConfigExists)
       throw new Error(`[@onmax/nuxt-better-auth] Missing ${clientConfigPath}.ts - export createAppAuthClient()`)
 
-    const hub = (nuxt.options as unknown as Record<string, unknown>).hub as { db?: boolean | string | object, kv?: boolean } | undefined
-    const hasDb = !!hub?.db
+    const hasNuxtHub = hasNuxtModule('@nuxthub/core', nuxt)
+    const hub = hasNuxtHub ? (nuxt.options as unknown as Record<string, unknown>).hub as { db?: boolean | string | object, kv?: boolean } | undefined : undefined
+    const hasDb = hasNuxtHub && !!hub?.db
 
     let secondaryStorageEnabled = options.secondaryStorage ?? false
-    if (secondaryStorageEnabled && !hub?.kv) {
-      consola.warn('[nuxt-better-auth] secondaryStorage requires hub.kv: true in nuxt.config.ts. Disabling.')
+    if (secondaryStorageEnabled && (!hasNuxtHub || !hub?.kv)) {
+      consola.warn('[nuxt-better-auth] secondaryStorage requires @nuxthub/core with hub.kv: true. Disabling.')
       secondaryStorageEnabled = false
     }
 
@@ -163,11 +164,13 @@ declare module 'nitropack/types' {
 
     if (nuxt.options.dev) {
       setupDevTools(nuxt)
-      addServerHandler({ route: '/api/_better-auth/sessions', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.get') })
-      addServerHandler({ route: '/api/_better-auth/sessions', method: 'delete', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.delete') })
-      addServerHandler({ route: '/api/_better-auth/users', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/users.get') })
-      addServerHandler({ route: '/api/_better-auth/accounts', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/accounts.get') })
       addServerHandler({ route: '/api/_better-auth/config', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/config.get') })
+      if (hasDb) {
+        addServerHandler({ route: '/api/_better-auth/sessions', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.get') })
+        addServerHandler({ route: '/api/_better-auth/sessions', method: 'delete', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.delete') })
+        addServerHandler({ route: '/api/_better-auth/users', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/users.get') })
+        addServerHandler({ route: '/api/_better-auth/accounts', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/accounts.get') })
+      }
       extendPages((pages) => {
         pages.push({ name: 'better-auth-devtools', path: '/__better-auth-devtools', file: resolver.resolve('./runtime/app/pages/__better-auth-devtools.vue') })
       })

@@ -47,6 +47,9 @@
     "@nuxthub/core": ">=0.10.0",
     "better-auth": ">=1.0.0"
   },
+  "peerDependenciesMeta": {
+    "@nuxthub/core": { "optional": true }
+  },
   "dependencies": {
     "@nuxt/kit": "^4.2.2",
     "defu": "^6.1.4",

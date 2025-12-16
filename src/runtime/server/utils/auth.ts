@@ -37,9 +37,14 @@ export async function serverAuth(): Promise<AuthInstance> {
   let database: ReturnType<typeof drizzleAdapter> | undefined
   let db: unknown
   if (useDatabase) {
-    const hubDb = await import('hub:db')
-    db = hubDb.db
-    database = drizzleAdapter(hubDb.db, { provider: dialect, schema: hubDb.schema })
+    try {
+      const hubDb = await import('hub:db')
+      db = hubDb.db
+      database = drizzleAdapter(hubDb.db, { provider: dialect, schema: hubDb.schema })
+    }
+    catch {
+      // hub:db not available - continue without database
+    }
   }
 
   const userConfig = createServerAuth({ runtimeConfig, db })
