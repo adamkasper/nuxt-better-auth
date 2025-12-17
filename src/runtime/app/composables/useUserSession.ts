@@ -168,7 +168,8 @@ export function useUserSession() {
       try {
         const headers = options.headers || useRequestHeaders(['cookie'])
         const fetchOptions = headers ? { headers } : undefined
-        const result = await client.getSession({}, fetchOptions)
+        const query = options.force ? { disableCookieCache: true } : undefined
+        const result = await client.getSession({ query }, fetchOptions)
         const data = result.data as { session: AuthSession, user: AuthUser } | null
 
         if (data?.session && data?.user) {
@@ -210,6 +211,7 @@ export function useUserSession() {
     signIn,
     signUp,
     signOut,
+    waitForSession,
     fetchSession,
     updateUser,
   }

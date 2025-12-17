@@ -22,7 +22,7 @@ tabs:
         },
         plugins: [admin(), twoFactor()],
       }))
-  - name: app/auth.client.ts
+  - name: auth.client.ts
     code: |
       import { adminClient, twoFactorClient } from 'better-auth/client/plugins'
       import { createAuthClient } from 'better-auth/vue'
@@ -33,7 +33,7 @@ tabs:
           plugins: [adminClient(), twoFactorClient()],
         })
       }
-  - name: app/pages/login.vue
+  - name: pages/login.vue
     code: |
       <script setup lang="ts">
       const { signIn } = useUserSession()

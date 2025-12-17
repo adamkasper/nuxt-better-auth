@@ -34,10 +34,15 @@ export interface ServerAuthContext {
 
 // Composable return type
 export interface UserSessionComposable {
+  client: unknown
   user: Ref<AuthUser | null>
   session: Ref<AuthSession | null>
   loggedIn: ComputedRef<boolean>
   ready: ComputedRef<boolean>
+  signIn: unknown
+  signUp: unknown
   fetchSession: (options?: { headers?: HeadersInit, force?: boolean }) => Promise<void>
-  signOut: () => Promise<void>
+  waitForSession: () => Promise<void>
+  signOut: (options?: { onSuccess?: () => void | Promise<void> }) => Promise<unknown>
+  updateUser: (updates: Partial<AuthUser>) => void
 }
