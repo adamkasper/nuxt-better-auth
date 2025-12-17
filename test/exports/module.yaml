@@ -2,3 +2,6 @@
   default: function
   defineClientAuth: function
   defineServerAuth: function
+./config:
+  defineClientAuth: function
+  defineServerAuth: function

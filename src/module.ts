@@ -36,7 +36,7 @@ export default defineNuxtModule<BetterAuthModuleOptions>({
 
     const hasNuxtHub = hasNuxtModule('@nuxthub/core', nuxt)
     const hub = hasNuxtHub ? (nuxt.options as unknown as Record<string, unknown>).hub as { db?: boolean | string | object, kv?: boolean } | undefined : undefined
-    const hasDb = hasNuxtHub && !!hub?.db
+    const hasHubDb = hasNuxtHub && !!hub?.db
 
     let secondaryStorageEnabled = options.secondaryStorage ?? false
     if (secondaryStorageEnabled && (!hasNuxtHub || !hub?.kv)) {
@@ -47,7 +47,7 @@ export default defineNuxtModule<BetterAuthModuleOptions>({
     nuxt.options.runtimeConfig.public = nuxt.options.runtimeConfig.public || {}
     nuxt.options.runtimeConfig.public.auth = defu(nuxt.options.runtimeConfig.public.auth as Record<string, unknown>, {
       redirects: { login: options.redirects?.login ?? '/login', guest: options.redirects?.guest ?? '/' },
-      useDatabase: hasDb,
+      useDatabase: hasHubDb,
     }) as { redirects: { login: string, guest: string }, useDatabase: boolean }
 
     // server-only
@@ -75,7 +75,7 @@ export function createSecondaryStorage() {
     nuxt.options.alias['#auth/secondary-storage'] = secondaryStorageTemplate.dst
 
     // conditional hub:db
-    const databaseCode = hasDb
+    const databaseCode = hasHubDb
       ? `import { db, schema } from 'hub:db'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 const rawDialect = '${(hub as any)?.db?.dialect ?? 'sqlite'}'
@@ -135,7 +135,7 @@ declare module '#nuxt-better-auth' {
   interface AuthSession { session: InferSession<_Config>['session'], user: InferUser<_Config> }
   interface ServerAuthContext {
     runtimeConfig: RuntimeConfig
-    ${hasDb ? `db: typeof import('hub:db')['db']` : ''}
+    ${hasHubDb ? `db: typeof import('hub:db')['db']` : ''}
   }
 }
 `,
@@ -182,14 +182,14 @@ declare module 'nitropack/types' {
       app.middleware.push({ name: 'auth', path: resolver.resolve('./runtime/app/middleware/auth.global'), global: true })
     })
 
-    if (hasDb) {
+    if (hasHubDb) {
       await setupBetterAuthSchema(nuxt, serverConfigPath)
     }
 
     if (nuxt.options.dev) {
       setupDevTools(nuxt)
       addServerHandler({ route: '/api/_better-auth/config', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/config.get') })
-      if (hasDb) {
+      if (hasHubDb) {
         addServerHandler({ route: '/api/_better-auth/sessions', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.get') })
         addServerHandler({ route: '/api/_better-auth/sessions', method: 'delete', handler: resolver.resolve('./runtime/server/api/_better-auth/sessions.delete') })
         addServerHandler({ route: '/api/_better-auth/users', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/users.get') })
