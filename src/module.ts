@@ -239,35 +239,34 @@ async function setupBetterAuthSchema(nuxt: any, serverConfigPath: string) {
     return
   }
 
-  nuxt.hook('modules:done', async () => {
-    try {
-      const configFile = `${serverConfigPath}.ts`
-      const userConfig = await loadUserAuthConfig(configFile)
+  // Generate schema immediately during module setup (before hub:db:schema:extend is called)
+  try {
+    const configFile = `${serverConfigPath}.ts`
+    const userConfig = await loadUserAuthConfig(configFile)
 
-      const extendedConfig: { plugins?: any[] } = {}
-      await nuxt.callHook('better-auth:config:extend', extendedConfig)
+    const extendedConfig: { plugins?: any[] } = {}
+    await nuxt.callHook('better-auth:config:extend', extendedConfig)
 
-      const plugins = [...(userConfig.plugins || []), ...(extendedConfig.plugins || [])]
+    const plugins = [...(userConfig.plugins || []), ...(extendedConfig.plugins || [])]
 
-      const { getAuthTables } = await import('better-auth/db')
-      const tables = getAuthTables({ plugins })
+    const { getAuthTables } = await import('better-auth/db')
+    const tables = getAuthTables({ plugins })
 
-      const schemaCode = generateDrizzleSchema(tables, dialect as 'sqlite' | 'postgresql' | 'mysql')
+    const schemaCode = generateDrizzleSchema(tables, dialect as 'sqlite' | 'postgresql' | 'mysql')
 
-      const schemaDir = join(nuxt.options.buildDir, 'better-auth')
-      const schemaPath = join(schemaDir, `schema.${dialect}.ts`)
+    const schemaDir = join(nuxt.options.buildDir, 'better-auth')
+    const schemaPath = join(schemaDir, `schema.${dialect}.ts`)
 
-      await mkdir(schemaDir, { recursive: true })
-      await writeFile(schemaPath, schemaCode)
+    await mkdir(schemaDir, { recursive: true })
+    await writeFile(schemaPath, schemaCode)
 
-      addTemplate({ filename: `better-auth/schema.${dialect}.ts`, getContents: () => schemaCode, write: true })
+    addTemplate({ filename: `better-auth/schema.${dialect}.ts`, getContents: () => schemaCode, write: true })
 
-      consola.info(`Generated ${dialect} schema with ${Object.keys(tables).length} tables`)
-    }
-    catch (error) {
-      consola.error('Failed to generate schema:', error)
-    }
-  })
+    consola.info(`Generated ${dialect} schema with ${Object.keys(tables).length} tables`)
+  }
+  catch (error) {
+    consola.error('Failed to generate schema:', error)
+  }
 
   nuxt.hook('hub:db:schema:extend', ({ paths, dialect: hookDialect }: { paths: string[], dialect: string }) => {
     const schemaPath = join(nuxt.options.buildDir, 'better-auth', `schema.${hookDialect}.ts`)
