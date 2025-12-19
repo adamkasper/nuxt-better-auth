@@ -86,45 +86,27 @@ export function useUserSession() {
   type SignIn = NonNullable<AppAuthClient>['signIn']
   type SignUp = NonNullable<AppAuthClient>['signUp']
 
+  // Wraps onSuccess callback to wait for session before executing
+  function wrapOnSuccess(cb: (ctx: unknown) => void | Promise<void>) {
+    return async (ctx: unknown) => {
+      await waitForSession()
+      await cb(ctx)
+    }
+  }
+
   function wrapAuthMethod<T extends (...args: unknown[]) => Promise<unknown>>(method: T): T {
     return (async (...args: unknown[]) => {
-      const [data, options] = args as [unknown, { onSuccess?: (ctx: unknown) => void } | undefined]
+      const [data, options] = args as [Record<string, any> | undefined, Record<string, any> | undefined]
 
-      // Check for nested fetchOptions.onSuccess (passkey pattern)
-      const dataWithFetch = data as { fetchOptions?: { onSuccess?: (ctx: unknown) => void } } | undefined
-      const nestedOnSuccess = dataWithFetch?.fetchOptions?.onSuccess
-
-      // Check for top-level options.onSuccess (email/social pattern)
-      const topLevelOnSuccess = options?.onSuccess
-
-      // If no onSuccess callback anywhere, pass through unchanged
-      if (!topLevelOnSuccess && !nestedOnSuccess)
-        return method(data, options)
-
-      // Wrap nested fetchOptions.onSuccess (passkey)
-      if (nestedOnSuccess) {
-        const wrappedData = {
-          ...dataWithFetch,
-          fetchOptions: {
-            ...dataWithFetch?.fetchOptions,
-            onSuccess: async (ctx: unknown) => {
-              await waitForSession()
-              await nestedOnSuccess(ctx)
-            },
-          },
-        }
-        return method(wrappedData, options)
+      // Passkey pattern: onSuccess in data.fetchOptions
+      if (data?.fetchOptions?.onSuccess) {
+        return method({ ...data, fetchOptions: { ...data.fetchOptions, onSuccess: wrapOnSuccess(data.fetchOptions.onSuccess) } }, options)
       }
-
-      // Wrap top-level options.onSuccess (email/social)
-      const wrappedOptions = {
-        ...options,
-        onSuccess: async (ctx: unknown) => {
-          await waitForSession()
-          await topLevelOnSuccess!(ctx)
-        },
+      // Email/social pattern: onSuccess in options
+      if (options?.onSuccess) {
+        return method(data, { ...options, onSuccess: wrapOnSuccess(options.onSuccess) })
       }
-      return method(data, wrappedOptions)
+      return method(data, options)
     }) as T
   }
 

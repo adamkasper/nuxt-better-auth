@@ -190,7 +190,7 @@ declare module 'nitropack/types' {
       await setupBetterAuthSchema(nuxt, serverConfigPath)
     }
 
-    if (nuxt.options.dev) {
+    if (nuxt.options.dev && process.env.NODE_ENV !== 'production') {
       setupDevTools(nuxt)
       addServerHandler({ route: '/api/_better-auth/config', method: 'get', handler: resolver.resolve('./runtime/server/api/_better-auth/config.get') })
       if (hasHubDb) {

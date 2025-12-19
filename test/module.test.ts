@@ -11,7 +11,7 @@ describe('nuxt-better-auth module', async () => {
     it('renders home page with BetterAuthState component', async () => {
       const html = await $fetch('/')
       expect(html).toContain('Home')
-      expect(html).toContain('Loading auth...')
+      expect(html).toContain('Not logged in')
     })
   })
 

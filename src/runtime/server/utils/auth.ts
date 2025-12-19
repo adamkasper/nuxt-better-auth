@@ -22,7 +22,8 @@ function getBaseURL(event: H3Event, siteUrl?: string): string {
     return siteUrl
   const origin = getRequestURL(event).origin
   if (process.env.NODE_ENV === 'production')
-    logger.warn('siteUrl not set, auto-detected:', origin)
+    throw new Error('siteUrl must be configured in production. Set NUXT_PUBLIC_SITE_URL or configure in nuxt.config.')
+  logger.warn('siteUrl not set, auto-detected:', origin)
   return origin
 }
 

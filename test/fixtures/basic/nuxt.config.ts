@@ -5,7 +5,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     betterAuthSecret: 'test-secret-for-testing-only-32chars!',
-    public: { siteUrl: '' },
+    public: { siteUrl: 'http://localhost:3000' },
   },
 
   auth: {
