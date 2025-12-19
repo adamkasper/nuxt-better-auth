@@ -56,6 +56,7 @@ export default defineNuxtConfig({
     cloudflare: {
       wrangler: {
         name: 'nuxt-better-auth-demo',
+        routes: [{ pattern: 'demo-nuxt-better-auth.onmax.me', zone_name: 'onmax.me', custom_domain: true }],
         compatibility_flags: ['nodejs_compat'],
         observability: { enabled: true, logs: { enabled: true, invocation_logs: true } },
       },
