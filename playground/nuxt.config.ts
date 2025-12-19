@@ -21,7 +21,7 @@ export default defineNuxtConfig({
     db: {
       dialect: 'sqlite',
       driver: 'd1',
-      connection: { databaseId: 'c57ea4c6-1f34-4933-904d-7dddd77510c1' },
+      connection: { databaseId: '19843a99-07d8-4c3b-b479-b48ba3792ce3' },
     },
   },
 
@@ -55,6 +55,7 @@ export default defineNuxtConfig({
     alias: { '@react-email/render': '#react-email-mock' },
     cloudflare: {
       wrangler: {
+        name: 'nuxt-better-auth-demo',
         compatibility_flags: ['nodejs_compat'],
         observability: { enabled: true, logs: { enabled: true, invocation_logs: true } },
       },
