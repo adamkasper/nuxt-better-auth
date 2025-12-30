@@ -1,6 +1,6 @@
 import type { AppAuthClient, AuthSession, AuthUser } from '#nuxt-better-auth'
 import { createAppAuthClient } from '#auth/client'
-import { computed, useRequestHeaders, useRequestURL, useRuntimeConfig, useState, watch } from '#imports'
+import { computed, nextTick, useRequestHeaders, useRequestURL, useRuntimeConfig, useState, watch } from '#imports'
 import { consola } from 'consola'
 
 export interface SignOutOptions { onSuccess?: () => void | Promise<void> }
@@ -90,6 +90,9 @@ export function useUserSession() {
   function wrapOnSuccess(cb: (ctx: unknown) => void | Promise<void>) {
     return async (ctx: unknown) => {
       await fetchSession({ force: true })
+      if (!loggedIn.value)
+        await waitForSession()
+      await nextTick()
       await cb(ctx)
     }
   }
