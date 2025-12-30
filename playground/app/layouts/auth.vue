@@ -62,7 +62,7 @@ const showTabs = computed(() => ['/login', '/register'].includes(route.path))
               :ui="{
                 root: 'flex flex-col gap-0 items-start',
                 list: 'p-0 rounded-none bg-transparent border-x border-t max-w-max',
-                trigger: 'justify-start rounded-none px-4 py-2 text-black dark:text-white data-[state=inactive]:opacity-40 data-[state=active]:opacity-100',
+                trigger: 'justify-start rounded-none px-4 py-2 text-black dark:text-white data-[state=inactive]:opacity-60 dark:data-[state=inactive]:opacity-40 data-[state=active]:opacity-100',
                 indicator: 'rounded-none inset-y-0 bg-neutral-300 dark:bg-zinc-900/90 shadow-none',
               }"
             />

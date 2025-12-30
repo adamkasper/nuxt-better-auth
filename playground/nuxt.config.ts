@@ -1,5 +1,5 @@
 export default defineNuxtConfig({
-  modules: ['@nuxthub/core', '@nuxt/ui', 'nuxt-qrcode', '../src/module'],
+  modules: ['nitro-cloudflare-dev', '@nuxthub/core', '@nuxt/ui', 'nuxt-qrcode', '../src/module'],
 
   css: ['~/assets/css/main.css'],
 
@@ -47,6 +47,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    preset: 'cloudflare-module',
     virtual: { '#react-email-mock': 'export const render = () => ""' },
     alias: { '@react-email/render': '#react-email-mock' },
     cloudflare: {

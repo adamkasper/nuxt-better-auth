@@ -23,6 +23,8 @@
     "@better-auth/cli": "1.4.7",
     "@libsql/client": "^0.15.15",
     "drizzle-kit": "^0.31.8",
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.1",
+    "nitro-cloudflare-dev": "^0.2.2",
+    "wrangler": "^4.56.0"
   }
 }
