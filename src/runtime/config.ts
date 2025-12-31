@@ -9,7 +9,7 @@ export interface ClientAuthContext {
   siteUrl: string
 }
 
-type ServerAuthConfig = Omit<BetterAuthOptions, 'database' | 'secret' | 'baseURL'>
+type ServerAuthConfig = Omit<BetterAuthOptions, 'secret' | 'baseURL'>
 type ClientAuthConfig = Omit<ClientOptions, 'baseURL'> & { baseURL?: string }
 
 export type ServerAuthConfigFn = (ctx: ServerAuthContext) => ServerAuthConfig

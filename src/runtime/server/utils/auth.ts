@@ -4,6 +4,7 @@ import { createSecondaryStorage } from '#auth/secondary-storage'
 import createServerAuth from '#auth/server'
 import { betterAuth } from 'better-auth'
 import { consola } from 'consola'
+import { defu } from 'defu'
 import { getRequestURL } from 'h3'
 import { useRuntimeConfig } from 'nitropack/runtime'
 
@@ -36,13 +37,14 @@ export async function serverAuth(event: H3Event): Promise<AuthInstance> {
   const database = createDatabase()
   const userConfig = createServerAuth({ runtimeConfig, db })
 
-  event.context._betterAuth = betterAuth({
-    ...userConfig,
-    ...(database && { database }),
+  const authOptions = defu(userConfig, {
+    database,
     secondaryStorage: createSecondaryStorage(),
     secret: runtimeConfig.betterAuthSecret,
     baseURL: getBaseURL(event, runtimeConfig.public.siteUrl as string | undefined),
   })
+
+  event.context._betterAuth = betterAuth(authOptions)
 
   return event.context._betterAuth
 }
