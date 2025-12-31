@@ -1,4 +1,5 @@
 import type { Nuxt, NuxtPage } from '@nuxt/schema'
+import type { BetterAuthPlugin } from 'better-auth'
 import type { BetterAuthModuleOptions } from './runtime/config'
 import type { AuthRouteRules } from './runtime/types'
 import { existsSync } from 'node:fs'
@@ -272,7 +273,7 @@ async function setupBetterAuthSchema(nuxt: Nuxt, serverConfigPath: string) {
     const configFile = `${serverConfigPath}.ts`
     const userConfig = await loadUserAuthConfig(configFile, isProduction)
 
-    const extendedConfig: { plugins?: unknown[] } = {}
+    const extendedConfig: { plugins?: BetterAuthPlugin[] } = {}
     await nuxt.callHook('better-auth:config:extend', extendedConfig)
 
     const plugins = [...(userConfig.plugins || []), ...(extendedConfig.plugins || [])]
