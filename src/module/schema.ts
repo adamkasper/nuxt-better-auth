@@ -17,6 +17,8 @@ interface SchemaContext {
 
 type HubSecondaryStorageMode = BetterAuthModuleOptions['hubSecondaryStorage']
 
+const NODE_MODULES_SEGMENT_RE = /[\\/]/
+
 export function resolveSchemaSecondaryStorageInjection(
   hubSecondaryStorage: HubSecondaryStorageMode,
   userHasSecondaryStorage: boolean,
@@ -39,7 +41,7 @@ export function resolveSchemaSecondaryStorageInjection(
 }
 
 function isInsideNodeModules(path: string): boolean {
-  return path.split(/[\\/]/).includes('node_modules')
+  return path.split(NODE_MODULES_SEGMENT_RE).includes('node_modules')
 }
 
 export function resolveHubSchemaPath(

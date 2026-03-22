@@ -13,6 +13,7 @@ export interface ResolvedModuleConfigPath {
 }
 
 const CONFIG_EXTENSIONS = ['.ts', '.js']
+const CONFIG_EXTENSION_RE = /\.(?:ts|js)$/
 const DEFAULT_CONFIG_FILES = {
   server: 'server/auth.config',
   client: 'app/auth.config',
@@ -23,7 +24,7 @@ const OPTION_KEY_BY_KIND = {
 } satisfies Record<ModuleConfigKind, keyof BetterAuthModuleOptions>
 
 function stripConfigExtension(path: string): string {
-  return path.replace(/\.(?:ts|js)$/, '')
+  return path.replace(CONFIG_EXTENSION_RE, '')
 }
 
 function configExists(path: string): boolean {
