@@ -1,4 +1,4 @@
-import type { AppSession, RequireSessionOptions } from '#nuxt-better-auth'
+import type { AppSession, AuthSession, RequireSessionOptions } from '#nuxt-better-auth'
 import type { H3Event } from 'h3'
 import { createError } from 'h3'
 import { matchesUser } from '../../utils/match-user'
@@ -321,6 +321,11 @@ export async function setSessionCookie(event: H3Event, token: string): Promise<v
     ...getChunkedCookieNames(event, context.authCookies.sessionData.name),
     ...getChunkedCookieNames(event, context.authCookies.dontRememberToken.name),
   ])
+}
+
+export async function createSession(event: H3Event, userId: string): Promise<AuthSession> {
+  const context = await getServerAuthContext(event)
+  return context.internalAdapter.createSession?.(userId, false) as Promise<AuthSession>
 }
 
 export async function requireUserSession(event: H3Event, options?: RequireSessionOptions): Promise<AppSession> {

@@ -353,3 +353,33 @@ describe('setSessionCookie', () => {
     expect(getSessionMock).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('createSession', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getSessionMock.mockReset()
+    createSessionMock.mockReset()
+  })
+
+  it('delegates to Better Auth internalAdapter.createSession with dontRememberMe disabled', async () => {
+    createSessionMock.mockResolvedValue({
+      id: 's1',
+      userId: 'u1',
+      token: 'token-1',
+      expiresAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    const { createSession } = await import('../src/runtime/server/utils/session')
+    const event = createEvent()
+    const session = await createSession(event, 'u1')
+
+    expect(createSessionMock).toHaveBeenCalledWith('u1', false)
+    expect(session).toMatchObject({
+      id: 's1',
+      userId: 'u1',
+      token: 'token-1',
+    })
+  })
+})
