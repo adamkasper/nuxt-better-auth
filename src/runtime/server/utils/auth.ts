@@ -10,7 +10,6 @@ import { getRequestHost, getRequestProtocol } from 'h3'
 import { useRuntimeConfig } from 'nitropack/runtime'
 import { withoutProtocol } from 'ufo'
 import { resolveCustomSecondaryStorageRequirement } from './custom-secondary-storage'
-import { validateAuthSecret } from './validate-secret'
 
 type AuthOptions = ReturnType<typeof createServerAuth>
 type AuthInstance = ReturnType<typeof betterAuth<AuthOptions>>
@@ -257,7 +256,6 @@ export function serverAuth(event?: H3Event): AuthInstance {
   if (cached)
     return cached
 
-  const betterAuthSecret = validateAuthSecret(runtimeConfig.betterAuthSecret)
   const database = createDatabase()
   const userConfig = createServerAuth({ runtimeConfig, db }) as BetterAuthOptions & {
     secondaryStorage?: BetterAuthOptions['secondaryStorage']
@@ -277,7 +275,7 @@ export function serverAuth(event?: H3Event): AuthInstance {
     ...userConfig,
     ...(database && { database }),
     ...(hubSecondaryStorage === true && { secondaryStorage: createSecondaryStorage() }),
-    secret: betterAuthSecret,
+    secret: runtimeConfig.betterAuthSecret,
     baseURL: siteUrl,
     trustedOrigins,
   })
