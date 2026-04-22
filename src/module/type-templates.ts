@@ -21,18 +21,18 @@ declare module '#auth/secondary-storage' {
   export function createSecondaryStorage(): SecondaryStorage | undefined
 }
 `,
-  }, { nitro: true, node: true })
+  }, { nitro: true })
 
   addTypeTemplate({
     filename: 'types/auth-database.d.ts',
     getContents: () => `
 declare module '#auth/database' {
   import type { BetterAuthOptions } from 'better-auth'
-  export function createDatabase(): BetterAuthOptions['database']
+  export function createDatabase(event?: import('h3').H3Event): BetterAuthOptions['database']
   export const db: ${hasHubDb ? `typeof import('@nuxthub/db')['db']` : 'undefined'}
 }
 `,
-  }, { nitro: true, node: true })
+  }, { nitro: true })
 
   addTypeTemplate({
     filename: 'types/auth-schema.d.ts',
@@ -51,7 +51,7 @@ declare module '#auth/schema' {
   } | undefined
 }
 `,
-  }, { nitro: true, node: true })
+  }, { nitro: true })
 
   addTypeTemplate({
     filename: 'types/nuxt-better-auth-infer.d.ts',
@@ -307,6 +307,15 @@ declare module 'nitropack' {
   interface InternalApi extends _GeneratedAuthInternalApi {}
 }
 declare module 'nitropack/types' {
+  interface NitroRouteRules {
+    auth?: import('${runtimeTypesPath}').AuthMeta
+  }
+  interface NitroRouteConfig {
+    auth?: import('${runtimeTypesPath}').AuthMeta
+  }
+  interface InternalApi extends _GeneratedAuthInternalApi {}
+}
+declare module 'nitro/types' {
   interface NitroRouteRules {
     auth?: import('${runtimeTypesPath}').AuthMeta
   }

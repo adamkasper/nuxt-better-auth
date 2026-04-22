@@ -109,6 +109,49 @@ export default defineNuxtModule<BetterAuthModuleOptions>({
       nuxt.options.alias['#auth/server'] = serverConfigPath
     nuxt.options.alias['#auth/client'] = clientConfigPath
 
+    if (!clientOnly) {
+      nuxt.hook('prepare:types', ({ nodeTsConfig, nodeReferences, sharedReferences }) => {
+        nodeTsConfig.compilerOptions ||= {}
+        nodeTsConfig.compilerOptions.paths ||= {}
+
+        const serverDir = dirname(serverConfigPath)
+        const projectReferenceTypePaths = [
+          join(nuxt.options.buildDir, 'types/nitro-imports.d.ts'),
+          join(nuxt.options.buildDir, 'types/auth-database.d.ts'),
+          join(nuxt.options.buildDir, 'types/auth-schema.d.ts'),
+          join(nuxt.options.buildDir, 'types/auth-secondary-storage.d.ts'),
+        ]
+
+        if (hasHubDb)
+          projectReferenceTypePaths.push(join(nuxt.options.buildDir, 'hub/db.d.ts'))
+
+        const exactNodeAliases = {
+          '#server': serverDir,
+          '#auth/server': nuxt.options.alias['#auth/server'],
+          '#auth/client': nuxt.options.alias['#auth/client'],
+          '#auth/database': nuxt.options.alias['#auth/database'],
+          '#auth/schema': nuxt.options.alias['#auth/schema'],
+          '#auth/secondary-storage': nuxt.options.alias['#auth/secondary-storage'],
+          '#auth/route-rules': nuxt.options.alias['#auth/route-rules'],
+          '#nuxt-better-auth': nuxt.options.alias['#nuxt-better-auth'],
+        } as const
+
+        for (const [key, value] of Object.entries(exactNodeAliases)) {
+          if (typeof value === 'string')
+            nodeTsConfig.compilerOptions.paths[key] = [value]
+        }
+
+        nodeTsConfig.compilerOptions.paths['#server/*'] = [join(serverDir, '*')]
+
+        for (const path of projectReferenceTypePaths) {
+          if (!nodeReferences.some(reference => 'path' in reference && reference.path === path))
+            nodeReferences.push({ path })
+          if (!sharedReferences.some(reference => 'path' in reference && reference.path === path))
+            sharedReferences.push({ path })
+        }
+      })
+    }
+
     if (clientOnly) {
       setupRuntimeConfig({
         nuxt,
