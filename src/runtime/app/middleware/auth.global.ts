@@ -48,8 +48,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const config = useRuntimeConfig().public.auth as AuthRuntimeConfig | undefined
   const { fetchSession, user, loggedIn } = useUserSession()
 
-  // Always fetch session if not logged in - state may not have synced yet
-  if (!loggedIn.value) {
+  const mode: AuthMode = typeof auth === 'string' ? auth : auth?.only ?? 'user'
+  const redirectTo = typeof auth === 'object' ? auth.redirectTo : undefined
+
+  if (!loggedIn.value || mode === 'guest') {
     const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
     const isHydratedPrerenderPayload
       = (import.meta.client || !import.meta.server)
@@ -57,9 +59,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
         && Boolean(nuxtApp.payload.prerenderedAt || nuxtApp.payload.isCached)
     await fetchSession({ headers, ...(isHydratedPrerenderPayload ? { force: true } : {}) })
   }
-
-  const mode: AuthMode = typeof auth === 'string' ? auth : auth?.only ?? 'user'
-  const redirectTo = typeof auth === 'object' ? auth.redirectTo : undefined
 
   if (mode === 'guest') {
     if (loggedIn.value)
