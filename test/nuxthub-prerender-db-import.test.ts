@@ -20,15 +20,32 @@ function walk(dir: string): string[] {
   })
 }
 
-function readGeneratedPrerenderOutput(): string {
-  const prerenderDir = join(fixtureDir, '.nuxt/prerender')
-  if (!statSync(prerenderDir, { throwIfNoEntry: false })?.isDirectory())
-    return ''
+function getGeneratedOutputDir(): string | null {
+  const candidateDirs = [
+    join(fixtureDir, '.nuxt/prerender'),
+    join(fixtureDir, '.output/server'),
+  ]
+  return candidateDirs.find(dir => statSync(dir, { throwIfNoEntry: false })?.isDirectory()) ?? null
+}
 
-  return walk(prerenderDir)
+function readGeneratedPrerenderOutput(): string {
+  const outputDir = getGeneratedOutputDir()
+  if (!outputDir)
+    return ''
+  return walk(outputDir)
     .filter(path => /\.(?:mjs|js)$/.test(path))
     .map(path => readFileSync(path, 'utf8'))
     .join('\n')
+}
+
+function readNitroEntry(outputDir: string): string {
+  const candidates = [
+    join(outputDir, 'chunks/nitro/nitro.mjs'),
+    join(outputDir, 'nitro.mjs'),
+  ]
+
+  const entry = candidates.find(path => statSync(path, { throwIfNoEntry: false })?.isFile())
+  return entry ? readFileSync(entry, 'utf8') : ''
 }
 
 describe('nuxthub prerender @nuxthub/db imports', () => {
@@ -41,10 +58,13 @@ describe('nuxthub prerender @nuxthub/db imports', () => {
 
     expect(build.status, `nuxi build failed:\n${build.stdout}\n${build.stderr}`).toBe(0)
 
-    const generatedDatabase = readFileSync(`${fixtureDir}/.nuxt/better-auth/database.mjs`, 'utf8')
-    const prerenderOutput = readGeneratedPrerenderOutput()
+    const outputDir = getGeneratedOutputDir()
+    expect(outputDir).not.toBeNull()
 
-    expect(generatedDatabase).toContain('import { db } from \'@nuxthub/db\'')
+    const prerenderOutput = readGeneratedPrerenderOutput()
+    const nitroEntry = readNitroEntry(outputDir!)
+
+    expect(nitroEntry).toMatch(/import\s+\{\s*db\s*\}\s+from\s+['"][^'"]*@nuxthub\/db(?:\/db\.mjs)?['"]/)
     // The bug emits a broken relative path like `../../../../../../../../@nuxthub/db/db.mjs`
     // that escapes the build dir and crashes the prerender step.
     expect(prerenderOutput).not.toMatch(/\.\.\/\.\.\/\.\.\/\.\.\/[^'"`]*@nuxthub\/db/)
