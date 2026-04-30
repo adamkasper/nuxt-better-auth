@@ -45,6 +45,26 @@ function getRuntimeFlags(): RuntimeFlags {
   return { client: Boolean(import.meta.client), server: Boolean(import.meta.server) }
 }
 
+function isReactiveProbeKey(prop: PropertyKey): boolean {
+  return typeof prop !== 'string' || prop === 'then' || prop.startsWith('__v')
+}
+
+function createServerOnlyActionNamespace(path: string) {
+  return new Proxy({}, {
+    get(_target, prop) {
+      if (isReactiveProbeKey(prop))
+        return undefined
+      const key = prop as string
+      return async () => {
+        throw new Error(`${path}.${key}() can only be called on client-side`)
+      }
+    },
+  })
+}
+
+const _signInServerOnly = createServerOnlyActionNamespace('signIn')
+const _signUpServerOnly = createServerOnlyActionNamespace('signUp')
+
 function ensureSessionSignalListener(client: AppAuthClient, onSignal: () => Promise<void>) {
   if (_sessionSignalListenerBound)
     return
@@ -267,9 +287,7 @@ export function useUserSession(): UseUserSessionReturn {
           )
         },
       })
-    : new Proxy({} as SignIn, {
-        get: (_, prop) => { throw new Error(`signIn.${String(prop)}() can only be called on client-side`) },
-      })
+    : _signInServerOnly as SignIn
 
   const signUp: SignUp = client?.signUp
     ? new Proxy(client.signUp, {
@@ -281,9 +299,7 @@ export function useUserSession(): UseUserSessionReturn {
           return wrapAuthMethod((...args: unknown[]) => (targetRecord[prop] as (...a: unknown[]) => Promise<unknown>)(...args), wrapDeps)
         },
       })
-    : new Proxy({} as SignUp, {
-        get: (_, prop) => { throw new Error(`signUp.${String(prop)}() can only be called on client-side`) },
-      })
+    : _signUpServerOnly as SignUp
 
   if (runtimeFlags.client && client && shouldSkipInitialClientSessionFetch.value) {
     ensureSessionSignalListener(client, () => fetchSession({ force: true }))
