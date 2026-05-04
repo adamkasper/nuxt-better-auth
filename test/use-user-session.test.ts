@@ -1,3 +1,4 @@
+import { createPinia, defineStore, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isReactive, isReadonly, isRef, reactive, ref, watch } from 'vue'
 
@@ -502,14 +503,17 @@ describe('useUserSession hydration bootstrap', () => {
     const secondAuth = useUserSession()
 
     expect(auth.client).not.toBe(rawClient)
+    expect(typeof auth.client).toBe('object')
     expect(secondAuth.client).toBe(auth.client)
     expect(secondAuth.client!.signIn).toBe(auth.client!.signIn)
     expect(secondAuth.client!.signIn.email).toBe(auth.client!.signIn.email)
+    expect(typeof (auth.client as Record<string, unknown>).sendVerificationEmail).toBe('function')
     expectVueInspectionSafe(auth.client)
     expectVueInspectionSafe(auth.client!.signIn)
     expectVueInspectionSafe(auth.client!.signIn.email)
     expectVueInspectionSafe(auth.client!.signUp)
     expectVueInspectionSafe(auth.client!.signUp.email)
+    expectVueInspectionSafe((auth.client as Record<string, any>).sendVerificationEmail)
     expectVueInspectionSafe(auth.client!.admin.impersonateUser)
   })
 
@@ -537,10 +541,39 @@ describe('useUserSession hydration bootstrap', () => {
     expect(isStateLike(store.authClient)).toBe(false)
     expect(isStateLike(store.signIn)).toBe(false)
     expect(isStateLike(store.signUp)).toBe(false)
+    expect(typeof store.authClient).toBe('object')
+    expect(typeof (store.authClient as Record<string, unknown>).sendVerificationEmail).toBe('function')
     expect(isStateLike((store.authClient as Record<string, unknown>).signIn)).toBe(false)
     expect(isStateLike((store.authClient as Record<string, unknown>).admin)).toBe(false)
+    expect(isStateLike((store.authClient as Record<string, unknown>).sendVerificationEmail)).toBe(false)
     expect(isStateLike((store.signIn as Record<string, unknown>).email)).toBe(false)
     expect(isStateLike((store.signUp as Record<string, unknown>).email)).toBe(false)
+  })
+
+  it('keeps forwarded authClient methods callable in an actual Pinia setup store', async () => {
+    const rawClient = createDynamicAuthProxy({
+      useSession: mockClient.useSession,
+      getSession: mockClient.getSession,
+      signOut: mockClient.signOut,
+      signIn: createDynamicAuthProxy(),
+      signUp: createDynamicAuthProxy(),
+      $store: mockClient.$store,
+    })
+    activeClient = rawClient
+    setActivePinia(createPinia())
+
+    const useUserSession = await loadUseUserSession()
+    const useAuthStore = defineStore('auth-client-forwarding', () => {
+      const { client: authClient, ...auth } = useUserSession()
+      return { authClient, ...auth }
+    })
+    const store = useAuthStore()
+
+    expect(typeof store.authClient).toBe('object')
+    expect(typeof (store.authClient as Record<string, unknown>).sendVerificationEmail).toBe('function')
+    expect(isRef(store.authClient as unknown)).toBe(false)
+    expect(isReactive(store.authClient as unknown)).toBe(false)
+    expect(isReactive((store.authClient as Record<string, unknown>).sendVerificationEmail)).toBe(false)
   })
 
   it('allows server-side auth method reads but still rejects invocation', async () => {
