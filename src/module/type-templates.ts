@@ -4,10 +4,14 @@ interface RegisterServerTypeTemplatesInput {
   serverConfigPath: string
   hasHubDb: boolean
   runtimeTypesPath: string
+  sharedServerConfigSafe: boolean
 }
 
 export function registerServerTypeTemplates(input: RegisterServerTypeTemplatesInput): void {
-  const { serverConfigPath, hasHubDb, runtimeTypesPath } = input
+  const { serverConfigPath, hasHubDb, runtimeTypesPath, sharedServerConfigSafe } = input
+  const serverConfigTypeTemplateOptions = sharedServerConfigSafe
+    ? { nuxt: true, nitro: true, node: true, shared: true }
+    : { nuxt: true, nitro: true, node: true }
 
   addTypeTemplate({
     filename: 'types/auth-secondary-storage.d.ts',
@@ -54,11 +58,39 @@ declare module '#auth/schema' {
   }, { nitro: true })
 
   addTypeTemplate({
+    filename: 'types/nuxt-better-auth-server-context.d.ts',
+    getContents: () => `
+/// <reference path="./nitro-imports.d.ts" />
+/// <reference path="./auth-database.d.ts" />
+/// <reference path="./auth-schema.d.ts" />
+/// <reference path="./auth-secondary-storage.d.ts" />
+${hasHubDb ? '/// <reference path="../hub/db.d.ts" />' : ''}
+
+export {}
+`,
+  }, { node: true })
+
+  addTypeTemplate({
+    filename: 'types/nuxt-better-auth-config-context.d.ts',
+    getContents: () => `
+import type { RuntimeConfig } from 'nuxt/schema'
+
+declare module '@onmax/nuxt-better-auth/config' {
+  interface ServerAuthContextExtension {
+    runtimeConfig: RuntimeConfig
+    db: ${hasHubDb ? `typeof import('@nuxthub/db')['db']` : 'undefined'}
+    requestOrigin?: string
+  }
+}
+
+`,
+  }, { nuxt: true, nitro: true, node: true, shared: true })
+
+  addTypeTemplate({
     filename: 'types/nuxt-better-auth-infer.d.ts',
     getContents: () => `
 import type { BetterAuthOptions, BetterAuthPlugin, InferPluginTypes, UnionToIntersection } from 'better-auth'
 import type { InferFieldsOutput } from 'better-auth/db'
-import type { RuntimeConfig } from 'nuxt/schema'
 import type createServerAuth from '${serverConfigPath}'
 
 type _RawConfig = ReturnType<typeof createServerAuth>
@@ -88,30 +120,10 @@ type _SessionFallback = _InferModelFieldsFromPlugins<_RawPlugins, 'session'> & _
 declare module '#nuxt-better-auth' {
   interface AuthUser extends _UserFallback {}
   interface AuthSession extends _SessionFallback {}
-  interface ServerAuthContext {
-    runtimeConfig: RuntimeConfig
-    db: ${hasHubDb ? `typeof import('@nuxthub/db')['db']` : 'undefined'}
-    requestOrigin?: string
-  }
   type PluginTypes = InferPluginTypes<_Config>
 }
-
-interface _AugmentedServerAuthContext {
-  runtimeConfig: RuntimeConfig
-  db: ${hasHubDb ? `typeof import('@nuxthub/db')['db']` : 'undefined'}
-  requestOrigin?: string
-}
-
-declare module '@onmax/nuxt-better-auth/config' {
-  import type { BetterAuthOptions, BetterAuthPlugin } from 'better-auth'
-  type ServerAuthConfig = Omit<BetterAuthOptions, 'secret' | 'baseURL'> & {
-    plugins?: readonly BetterAuthPlugin[]
-  }
-  export function defineServerAuth<const R>(config: (ctx: _AugmentedServerAuthContext) => R & ServerAuthConfig): (ctx: _AugmentedServerAuthContext) => R
-  export function defineServerAuth<const R>(config: R & ServerAuthConfig): (ctx: _AugmentedServerAuthContext) => R
-}
 `,
-  }, { nuxt: true, nitro: true, node: true, shared: true })
+  }, serverConfigTypeTemplateOptions)
 
   addTypeTemplate({
     filename: 'types/nuxt-better-auth-social-providers.d.ts',
@@ -128,7 +140,7 @@ declare module '#nuxt-better-auth' {
   }
 }
 `,
-  }, { nuxt: true, nitro: true, node: true, shared: true })
+  }, serverConfigTypeTemplateOptions)
 
   addTypeTemplate({
     filename: 'types/nuxt-better-auth-nitro.d.ts',
@@ -326,7 +338,7 @@ declare module 'nitro/types' {
 }
 export {}
 `,
-  }, { nuxt: true, nitro: true, node: true })
+  }, { nitro: true, node: true })
 }
 
 interface RegisterSharedTypeTemplatesInput {

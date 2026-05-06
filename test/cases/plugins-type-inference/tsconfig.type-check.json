@@ -1,11 +1,28 @@
 {
-  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
-    "noEmit": true
+    "target": "ESNext",
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "baseUrl": ".",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "paths": {
+      "#auth/client": ["./app/auth.config"],
+      "#auth/server": ["./server/auth.config"],
+      "#nuxt-better-auth": ["../../../src/runtime/types/augment"]
+    },
+    "types": [],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
   },
-  "include": [
-    "./.nuxt/nuxt.d.ts",
+  "files": [
     "./virtual-modules.d.ts",
+    "./.nuxt/types/nuxt-better-auth-infer.d.ts",
+    "./.nuxt/types/nuxt-better-auth-social-providers.d.ts",
+    "./.nuxt/types/nuxt-better-auth-nitro.d.ts",
     "./typecheck-target.ts"
   ]
 }
