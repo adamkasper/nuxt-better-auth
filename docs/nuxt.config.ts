@@ -2,7 +2,7 @@ import yaml from '@rollup/plugin-yaml'
 
 export default defineNuxtConfig({
   extends: ['docus'],
-  modules: ['@vueuse/nuxt', 'motion-v/nuxt', '@vercel/analytics/nuxt'],
+  modules: ['@vueuse/nuxt', 'motion-v/nuxt', '@vercel/analytics/nuxt', 'nuxt-shiki'],
 
   icon: {
     customCollections: [{ prefix: 'custom', dir: './public/icons' }],
@@ -33,9 +33,17 @@ export default defineNuxtConfig({
 
   mdc: {
     highlight: {
+      noApiRoute: false,
       theme: { default: 'synthwave-84', dark: 'synthwave-84', light: 'one-light' },
       langs: ['bash', 'json', 'js', 'ts', 'vue', 'html', 'css', 'yaml', 'sql'],
     },
+  },
+
+  shiki: {
+    bundledLangs: ['ts', 'vue', 'js', 'bash', 'json'],
+    bundledThemes: ['github-dark'],
+    defaultLang: 'ts',
+    defaultTheme: 'github-dark',
   },
 
   devtools: { enabled: true },
