@@ -44,11 +44,13 @@
   ],
   "scripts": {
     "prepack": "nuxt-module-build build",
+    "build": "pnpm build:docs",
     "dev": "pnpm dev:prepare && nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build build --stub && nuxi prepare playground",
     "dev:docs": "nuxi dev docs",
     "build:docs": "nuxi build docs",
+    "deploy": "wrangler deploy",
     "release": "bumpp --push --no-push-all",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -113,6 +115,7 @@
     "vitest-package-exports": "^1.2.0",
     "vue": "3.5.29",
     "vue-tsc": "^3.2.7",
+    "wrangler": "4.72.0",
     "yaml": "^2.8.3"
   }
 }
