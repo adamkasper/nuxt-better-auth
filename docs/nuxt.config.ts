@@ -52,6 +52,19 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2026-02-18',
 
+  mcp: { enabled: false },
+
+  nitro: {
+    preset: 'cloudflare-module',
+    cloudflare: {
+      nodeCompat: true,
+      wrangler: {
+        name: 'better-auth',
+        observability: { enabled: true, logs: { enabled: true, invocation_logs: true } },
+      },
+    },
+  },
+
   vite: { plugins: [yaml()] },
 
   ogImage: { compatibility: { runtime: { resvg: false } } },

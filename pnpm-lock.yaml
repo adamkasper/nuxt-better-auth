@@ -153,6 +153,9 @@ importers:
       '@nuxt/fonts':
         specifier: ^0.14.0
         version: 0.14.0(db0@0.3.4(@libsql/client@0.17.3)(better-sqlite3@12.9.0)(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20260312.1)(@libsql/client@0.17.3)(@opentelemetry/api@1.9.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.18.0)(better-sqlite3@12.9.0)(kysely@0.28.17)(pg@8.19.0)(postgres@3.4.9)(prisma@5.22.0)))(ioredis@5.10.0)(magicast@0.5.2)(vite@7.3.1(@types/node@25.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0))
+      '@nuxt/icon':
+        specifier: ^2.2.2
+        version: 2.2.2(magicast@0.5.2)(vite@7.3.1(@types/node@25.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0))(vue@3.5.29(typescript@5.9.3))
       '@nuxt/ui':
         specifier: ^4.5.0
         version: 4.7.1(8a5b7a5bcf1226158da998325ac1223e)
@@ -174,6 +177,9 @@ importers:
       nuxt-shiki:
         specifier: ^0.3.2
         version: 0.3.2(magicast@0.5.2)
+      nuxt-site-config:
+        specifier: ^4.0.8
+        version: 4.0.8(@nuxt/schema@4.4.5)(magicast@0.5.2)(nuxt@4.3.1(f95a8995226922a3a151696947b23c6c))(vite@7.3.1(@types/node@25.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0))(vue@3.5.29(typescript@5.9.3))(zod@4.3.6)
       satori:
         specifier: ^0.26.0
         version: 0.26.0
