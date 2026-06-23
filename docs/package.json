@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nuxi dev",
     "build": "nuxi build",
+    "deploy": "wrangler deploy",
     "generate": "nuxi generate",
     "preview": "nuxi preview"
   },
@@ -26,6 +27,7 @@
     "@iconify-json/solar": "^1.2.5",
     "@rollup/plugin-yaml": "^4.1.2",
     "@vueuse/nuxt": "^14.2.1",
-    "docus": "^5.11.0"
+    "docus": "^5.11.0",
+    "wrangler": "4.72.0"
   }
 }

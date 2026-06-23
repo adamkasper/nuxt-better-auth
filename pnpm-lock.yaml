@@ -199,6 +199,9 @@ importers:
       docus:
         specifier: ^5.11.0
         version: 5.11.0(311aa5b7f65be022cddaa4ada719f740)
+      wrangler:
+        specifier: 4.72.0
+        version: 4.72.0(@cloudflare/workers-types@4.20260312.1)
 
   playground:
     dependencies:
