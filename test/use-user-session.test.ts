@@ -60,7 +60,7 @@ const mockClient: Record<string, any> = {
     listen: vi.fn(),
   },
   signOut: vi.fn(async () => {}),
-  signIn: { social: vi.fn(async () => ({})), email: vi.fn(async () => ({})) },
+  signIn: { social: vi.fn(async () => ({})), oauth2: vi.fn(async () => ({})), email: vi.fn(async () => ({})) },
   signUp: { email: vi.fn(async () => ({})) },
 }
 let activeClient: Record<string, any> = mockClient
@@ -175,6 +175,8 @@ describe('useUserSession hydration bootstrap', () => {
     mockClient.updateUser = undefined
     mockClient.signIn.social.mockReset()
     mockClient.signIn.social.mockResolvedValue({})
+    mockClient.signIn.oauth2.mockReset()
+    mockClient.signIn.oauth2.mockResolvedValue({})
     mockClient.signIn.email.mockReset()
     mockClient.signIn.email.mockResolvedValue({})
     mockClient.signUp.email.mockReset()
@@ -736,6 +738,135 @@ describe('useUserSession hydration bootstrap', () => {
 
     expect(mockClient.getSession).toHaveBeenCalledOnce()
     expect(navigateTo).toHaveBeenCalledWith('/app')
+  })
+
+  it('signIn.oauth2 injects callbackURL from auth.redirects.authenticated when missing', async () => {
+    runtimeConfig.public.auth.redirects = { authenticated: '/app' }
+    mockClient.signIn.oauth2.mockResolvedValueOnce({ url: 'https://login.szn.cz/oauth/authorize', redirect: true })
+
+    const { useAuthActionNamespaces } = await loadAuthComposables()
+    const auth = useAuthActionNamespaces()
+
+    await auth.signIn.oauth2({ providerId: 'seznam' } as never)
+
+    expect(mockClient.signIn.oauth2).toHaveBeenCalledWith({ providerId: 'seznam', callbackURL: '/app' }, undefined)
+    expect(mockClient.getSession).not.toHaveBeenCalled()
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it('signIn.oauth2 injects callbackURL from safe redirect query first', async () => {
+    runtimeConfig.public.auth.redirects = { authenticated: '/app' }
+    requestURL.searchParams = new URLSearchParams({ redirect: '/app/billing' })
+    mockClient.signIn.oauth2.mockResolvedValueOnce({ url: 'https://login.szn.cz/oauth/authorize', redirect: true })
+
+    const { useAuthActionNamespaces } = await loadAuthComposables()
+    const auth = useAuthActionNamespaces()
+
+    await auth.signIn.oauth2({ providerId: 'seznam' } as never)
+
+    expect(mockClient.signIn.oauth2).toHaveBeenCalledWith({ providerId: 'seznam', callbackURL: '/app/billing' }, undefined)
+  })
+
+  it('signIn.oauth2 does not override explicit callbackURL', async () => {
+    runtimeConfig.public.auth.redirects = { authenticated: '/app' }
+    requestURL.searchParams = new URLSearchParams({ redirect: '/app/billing' })
+    mockClient.signIn.oauth2.mockResolvedValueOnce({ url: 'https://login.szn.cz/oauth/authorize', redirect: true })
+
+    const { useAuthActionNamespaces } = await loadAuthComposables()
+    const auth = useAuthActionNamespaces()
+
+    await auth.signIn.oauth2({ providerId: 'seznam', callbackURL: '/custom' } as never)
+
+    expect(mockClient.signIn.oauth2).toHaveBeenCalledWith({ providerId: 'seznam', callbackURL: '/custom' }, undefined)
+  })
+
+  it('signIn.oauth2 preserves explicit onSuccess without wrapping session sync', async () => {
+    const onSuccess = vi.fn()
+    mockClient.signIn.oauth2.mockImplementation(async (_data, opts) => {
+      await opts?.onSuccess?.('ctx')
+    })
+
+    const { useAuthActionNamespaces } = await loadAuthComposables()
+    const auth = useAuthActionNamespaces()
+
+    await auth.signIn.oauth2({ providerId: 'seznam' } as never, { onSuccess } as never)
+
+    expect(onSuccess).toHaveBeenCalledOnce()
+    expect(mockClient.getSession).not.toHaveBeenCalled()
+  })
+
+  it('signIn.oauth2 with disableRedirect wraps explicit onSuccess with session sync', async () => {
+    let sessionAuth!: ReturnType<Awaited<ReturnType<typeof loadUseUserSession>>>
+    let sessionAtCallback: unknown
+    const onSuccess = vi.fn(() => {
+      sessionAtCallback = sessionAuth.session.value
+    })
+    mockClient.getSession.mockResolvedValueOnce({
+      data: {
+        session: { id: 'session-1', ipAddress: '127.0.0.1' },
+        user: { id: 'user-1', email: 'user@example.com' },
+      },
+    })
+    mockClient.signIn.oauth2.mockImplementation(async (_data, opts) => {
+      await opts?.onSuccess?.('ctx')
+    })
+
+    const { useAuthActionNamespaces, useUserSession } = await loadAuthComposables()
+    sessionAuth = useUserSession()
+    const auth = useAuthActionNamespaces()
+
+    await auth.signIn.oauth2({ providerId: 'seznam', disableRedirect: true } as never, { onSuccess } as never)
+
+    expect(onSuccess).toHaveBeenCalledOnce()
+    expect(sessionAtCallback).toEqual({ id: 'session-1', ipAddress: '127.0.0.1' })
+  })
+
+  it('signIn.oauth2 with disableRedirect uses fallback redirect when callback is missing', async () => {
+    runtimeConfig.public.auth.redirects = { authenticated: '/app' }
+    mockClient.getSession.mockResolvedValueOnce({
+      data: {
+        session: { id: 'session-1', ipAddress: '127.0.0.1' },
+        user: { id: 'user-1', email: 'user@example.com' },
+      },
+    })
+    mockClient.signIn.oauth2.mockImplementation(async (_data, opts) => {
+      await opts?.onSuccess?.('ctx')
+    })
+
+    const { useAuthActionNamespaces } = await loadAuthComposables()
+    const auth = useAuthActionNamespaces()
+
+    await auth.signIn.oauth2({ providerId: 'seznam', disableRedirect: true } as never)
+
+    expect(mockClient.getSession).toHaveBeenCalledOnce()
+    expect(navigateTo).toHaveBeenCalledWith('/app')
+  })
+
+  it('signIn.email still syncs session after a successful call', async () => {
+    let sessionAuth!: ReturnType<Awaited<ReturnType<typeof loadUseUserSession>>>
+    let sessionAtCallback: unknown
+    const onSuccess = vi.fn(() => {
+      sessionAtCallback = sessionAuth.session.value
+    })
+    mockClient.getSession.mockResolvedValueOnce({
+      data: {
+        session: { id: 'session-1', ipAddress: '127.0.0.1' },
+        user: { id: 'user-1', email: 'user@example.com' },
+      },
+    })
+    mockClient.signIn.email.mockImplementation(async (_data, opts) => {
+      await opts?.onSuccess?.('ctx')
+    })
+
+    const { useAuthActionNamespaces, useUserSession } = await loadAuthComposables()
+    sessionAuth = useUserSession()
+    const auth = useAuthActionNamespaces()
+
+    await auth.signIn.email({ email: 'user@example.com', password: 'password' }, { onSuccess } as never)
+
+    expect(onSuccess).toHaveBeenCalledOnce()
+    expect(mockClient.getSession).toHaveBeenCalledOnce()
+    expect(sessionAtCallback).toEqual({ id: 'session-1', ipAddress: '127.0.0.1' })
   })
 
   it('signUp does not auto-navigate to authenticated redirect when session is unresolved', async () => {
