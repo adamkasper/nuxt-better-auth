@@ -296,19 +296,15 @@ export function useAuthActionNamespaces() {
         if (typeof method !== 'function')
           return method
         const isRedirectOAuthSignIn = prop === 'social' || prop === 'oauth2'
-        const shouldSkipSessionSync = isRedirectOAuthSignIn
-          ? (data: unknown) => {
-              const oauthData = isRecord(data) ? data : undefined
-              return oauthData?.disableRedirect !== true
-            }
-          : undefined
-        const transformData = isRedirectOAuthSignIn
-          ? (data: unknown) => withFallbackSocialCallbackURL(data, requestURL)
-          : undefined
         return wrapAuthMethod(
           (...args: unknown[]) => (targetRecord[prop] as (...a: unknown[]) => Promise<unknown>)(...args),
           wrapDeps,
-          { shouldSkipSessionSync, transformData },
+          isRedirectOAuthSignIn
+            ? {
+                shouldSkipSessionSync: (data: unknown) => !isRecord(data) || data.disableRedirect !== true,
+                transformData: (data: unknown) => withFallbackSocialCallbackURL(data, requestURL),
+              }
+            : {},
         )
       })
     : _signInServerOnly as SignIn
