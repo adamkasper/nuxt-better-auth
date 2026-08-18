@@ -644,7 +644,12 @@ describe('useUserSession hydration bootstrap', () => {
     const { useAuthActionNamespaces } = await loadAuthComposables()
     const auth = useAuthActionNamespaces()
 
-    await (auth.signIn as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>)[method](data)
+    if (method === 'social') {
+      await auth.signIn.social(data)
+    }
+    else {
+      await auth.signIn.oauth2(data)
+    }
 
     expect(mockClient.signIn[method]).toHaveBeenCalledWith({ ...data, callbackURL: '/app' }, undefined)
     expect(mockClient.getSession).not.toHaveBeenCalled()
@@ -728,7 +733,12 @@ describe('useUserSession hydration bootstrap', () => {
     sessionAuth = useUserSession()
     const auth = useAuthActionNamespaces()
 
-    await (auth.signIn as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>)[method](data, { onSuccess })
+    if (method === 'social') {
+      await auth.signIn.social(data, { onSuccess })
+    }
+    else {
+      await auth.signIn.oauth2(data, { onSuccess })
+    }
 
     expect(onSuccess).toHaveBeenCalledOnce()
     expect(sessionAtCallback).toEqual({ id: 'session-1', ipAddress: '127.0.0.1' })
