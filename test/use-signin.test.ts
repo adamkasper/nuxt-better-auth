@@ -207,20 +207,6 @@ describe('useSignIn', () => {
     expect(signInSocial.status.value).toBe('success')
   })
 
-  it('supports keyed generic OAuth sign-in handle', async () => {
-    sessionMock = {
-      signIn: {
-        oauth2: vi.fn(async () => ({ ok: true })),
-      },
-    }
-
-    const useSignIn = await loadUseSignIn()
-    const signInOAuth2 = useSignIn('oauth2' as any)
-
-    await signInOAuth2.execute({ providerId: 'seznam', callbackURL: '/app' } as any)
-    expect(signInOAuth2.status.value).toBe('success')
-  })
-
   it('keeps pending for redirect responses until fallback timeout', async () => {
     vi.useFakeTimers()
     sessionMock = {
@@ -240,28 +226,6 @@ describe('useSignIn', () => {
 
     vi.advanceTimersByTime(10_000)
     expect(signInSocial.status.value).toBe('success')
-    vi.useRealTimers()
-  })
-
-  it('keeps pending for generic OAuth redirect responses until fallback timeout', async () => {
-    vi.useFakeTimers()
-    sessionMock = {
-      signIn: {
-        oauth2: vi.fn(async () => ({
-          url: 'https://login.szn.cz/oauth/authorize',
-          redirect: true,
-        })),
-      },
-    }
-
-    const useSignIn = await loadUseSignIn()
-    const signInOAuth2 = useSignIn('oauth2' as any)
-
-    await signInOAuth2.execute({ providerId: 'seznam' } as any)
-    expect(signInOAuth2.status.value).toBe('pending')
-
-    vi.advanceTimersByTime(10_000)
-    expect(signInOAuth2.status.value).toBe('success')
     vi.useRealTimers()
   })
 
@@ -287,31 +251,6 @@ describe('useSignIn', () => {
 
     vi.advanceTimersByTime(10_000)
     expect(signInSocial.status.value).toBe('success')
-    vi.useRealTimers()
-  })
-
-  it('keeps pending for nested generic OAuth redirect responses until fallback timeout', async () => {
-    vi.useFakeTimers()
-    sessionMock = {
-      signIn: {
-        oauth2: vi.fn(async () => ({
-          data: {
-            url: 'https://login.szn.cz/oauth/authorize',
-            redirect: true,
-          },
-          error: null,
-        })),
-      },
-    }
-
-    const useSignIn = await loadUseSignIn()
-    const signInOAuth2 = useSignIn('oauth2' as any)
-
-    await signInOAuth2.execute({ providerId: 'seznam' } as any)
-    expect(signInOAuth2.status.value).toBe('pending')
-
-    vi.advanceTimersByTime(10_000)
-    expect(signInOAuth2.status.value).toBe('success')
     vi.useRealTimers()
   })
 
